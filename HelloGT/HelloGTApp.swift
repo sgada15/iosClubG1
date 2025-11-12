@@ -10,8 +10,9 @@ import SwiftUI
 struct HelloGTApp: App {
     var body: some Scene {
         WindowGroup {
-            MainTabView() // 
+            LaunchView()
         }
     }
 }
+
 
