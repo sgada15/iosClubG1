@@ -8,11 +8,33 @@
 import SwiftUI
 
 struct EventsView: View {
+    private let events = Event.sampleEvents
+    
     var body: some View {
-        NavigationView {
-            Text("Events Page")
-                .font(.largeTitle)
-                .navigationTitle("Events")
+        NavigationStack {
+            ScrollView {
+                LazyVStack(spacing: 16) {
+                    ForEach(events) { event in
+                        NavigationLink(value: event) {
+                            EventCardView(event: event)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 12)
+            }
+            .navigationTitle("Events")
+            .navigationDestination(for: Event.self) { event in
+                EventDetailView(event: event)
+            }
         }
     }
 }
+
+struct EventsView_Previews: PreviewProvider {
+    static var previews: some View {
+        EventsView()
+    }
+}
+
