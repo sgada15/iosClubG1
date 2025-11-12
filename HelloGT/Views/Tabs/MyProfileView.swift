@@ -14,7 +14,7 @@ struct MyProfileView: View {
         name: "Alex Johnson",
         major: "Computer Science",
         year: "Senior",
-        threads: [""],
+        threads: ["@alexjohnson.gt"],
         interests: ["Coding", "Hiking", "Photography", "Music"],
         clubs: ["CS Club", "Outdoor Adventures", "Photography Society"],
         bio: "Computer Science student passionate about software development and outdoor adventures. Love building apps and capturing moments through photography.",
