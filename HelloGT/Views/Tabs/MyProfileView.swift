@@ -34,7 +34,7 @@ struct MyProfileView: View {
             )
             .sheet(isPresented: $showEditProfile) {
                 NavigationView {
-                    EditProfileView()
+                    EditProfileView(profile: $currentUserProfile)
                         .navigationTitle("Edit Profile")
                         .navigationBarTitleDisplayMode(.inline)
                 }
