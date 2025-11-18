@@ -11,18 +11,18 @@ import FirebaseAuth
 struct MyProfileView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     
-    // Sample profile data for current user - you'll replace this later
+    // Start with empty profile - will be loaded from Firebase or created
     @State private var currentUserProfile: UserProfile = UserProfile(
-        id: "current-user",
+        id: "",
         profilePhotoURL: nil,
-        name: "Alex Johnson",
-        username: "alexjohnson",
-        year: "2025",
-        major: "Computer Science",
-        bio: "Computer Science student passionate about software development and outdoor adventures. Love building apps and capturing moments through photography.",
-        interests: ["Coding", "Hiking", "Photography", "Music"],
-        clubs: ["CS Club", "Outdoor Adventures", "Photography Society"],
-        personalityAnswers: ["Problem solver", "Adventure seeker", "Creative", "Team player"]
+        name: "",
+        username: "",
+        year: "",
+        major: "",
+        bio: "",
+        interests: [],
+        clubs: [],
+        personalityAnswers: ["", "", "", ""]
     )
     
     @State private var showEditProfile = false
@@ -76,11 +76,36 @@ struct MyProfileView: View {
     }
     
     private func loadCurrentUserProfile() {
-        // Update profile with current user info from auth
-        if let user = authManager.user {
-            currentUserProfile.id = user.uid
-            if let displayName = user.displayName, !displayName.isEmpty {
-                currentUserProfile.name = displayName
+        guard let user = authManager.user else { return }
+        
+        Task {
+            do {
+                print("🔍 Loading profile for user: \(user.email ?? "no email")")
+                
+                if let loadedProfile = try await authManager.getCurrentUserProfile() {
+                    print("✅ Found existing profile: \(loadedProfile.name)")
+                    await MainActor.run {
+                        currentUserProfile = loadedProfile
+                    }
+                } else {
+                    print("⚠️ No profile found, creating new one...")
+                    if let newProfile = try await authManager.createProfileForCurrentUser() {
+                        print("✅ Created new profile: \(newProfile.name)")
+                        await MainActor.run {
+                            currentUserProfile = newProfile
+                        }
+                    } else {
+                        print("❌ Failed to create profile")
+                    }
+                }
+            } catch {
+                print("❌ Error loading/creating profile: \(error)")
+                // Fallback: create basic profile with auth info
+                await MainActor.run {
+                    currentUserProfile.id = user.uid
+                    currentUserProfile.name = user.displayName ?? "User"
+                    currentUserProfile.username = user.email?.split(separator: "@").first?.lowercased() ?? "user"
+                }
             }
         }
     }
