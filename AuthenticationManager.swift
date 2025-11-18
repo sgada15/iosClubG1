@@ -130,16 +130,19 @@ class AuthenticationManager: ObservableObject {
     // MARK: - Create Initial User Profile
     private func createInitialUserProfile(uid: String, email: String, firstName: String, lastName: String) async throws {
         let fullName = "\(firstName) \(lastName)"
+        let username = "\(firstName.lowercased())\(lastName.lowercased())" // Generate basic username
+        
         let userProfile = UserProfile(
             id: uid,
+            profilePhotoURL: nil,
             name: fullName,
-            major: "", // Will be filled during profile setup
+            username: username,
             year: "", // Will be filled during profile setup
-            threads: [],
+            major: "", // Will be filled during profile setup
+            bio: "",
             interests: [],
             clubs: [],
-            bio: "",
-            imageName: "AppIcon" // Default image
+            personalityAnswers: ["", "", "", ""] // Empty personality answers to fill later
         )
         
         let profileData = try userProfile.toDictionary()

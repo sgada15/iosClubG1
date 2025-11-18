@@ -24,15 +24,15 @@ extension SavedProfile {
     var asUserProfile: UserProfile {
         UserProfile(
             id: id.uuidString,
+            profilePhotoURL: nil,
             name: name,
             username: name.lowercased().replacingOccurrences(of: " ", with: ""),
-            major: major,
             year: year,
-            threads: threads,
+            major: major,
+            bio: bio,
             interests: interests,
             clubs: clubs,
-            bio: bio,
-            imageName: imageName
+            personalityAnswers: ["Sample", "Personality", "Answers", "Here"]
         )
     }
 }
@@ -128,11 +128,12 @@ struct SavedProfileCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Profile picture
-            Image(profile.imageName)
+            Image(systemName: "person.circle.fill")
                 .resizable()
                 .scaledToFill()
                 .frame(width: 55, height: 55)
                 .clipShape(Circle())
+                .foregroundColor(.gray)
                 .shadow(radius: 2)
             
             // Info section

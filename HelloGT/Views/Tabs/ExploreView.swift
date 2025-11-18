@@ -15,48 +15,52 @@ struct ExploreView: View {
     // Sample profiles for the explore feed
     @State private var exploreProfiles: [UserProfile] = [
         UserProfile(
+            id: UUID().uuidString,
+            profilePhotoURL: nil,
             name: "Sarah Kim",
             username: "sarahkim",
+            year: "2026",
             major: "Mechanical Engineering", 
-            year: "Junior",
-            threads: ["@sarahkim.gt"],
+            bio: "Mechanical Engineering student passionate about robotics and automation. Love building things and solving complex problems. Always up for an adventure!",
             interests: ["Robotics", "3D Printing", "Rock Climbing", "Cooking"],
             clubs: ["Robotics Club", "Women in Engineering", "Climbing Club"],
-            bio: "Mechanical Engineering student passionate about robotics and automation. Love building things and solving complex problems. Always up for an adventure!",
-            imageName: "person4"
+            personalityAnswers: ["Creative problem solver", "Team player", "Adventure seeker", "Detail oriented"]
         ),
         UserProfile(
+            id: UUID().uuidString,
+            profilePhotoURL: nil,
             name: "Marcus Thompson",
             username: "marcusthompson",
+            year: "2027",
             major: "Business Administration",
-            year: "Sophomore", 
-            threads: ["@marcusthompson.gt"],
+            bio: "Business student with a passion for startups and innovation. Love connecting with like-minded people and exploring new opportunities.",
             interests: ["Entrepreneurship", "Basketball", "Finance", "Music Production"],
             clubs: ["Entrepreneurship Club", "Investment Club", "Basketball Intramurals"],
-            bio: "Business student with a passion for startups and innovation. Love connecting with like-minded people and exploring new opportunities.",
-            imageName: "person5"
+            personalityAnswers: ["Natural leader", "Innovative thinker", "People person", "Goal oriented"]
         ),
         UserProfile(
+            id: UUID().uuidString,
+            profilePhotoURL: nil,
             name: "Emma Rodriguez",
             username: "emmarodriguez",
+            year: "2025",
             major: "Industrial Design",
-            year: "Senior",
-            threads: ["@emmarodriguez.gt"],
+            bio: "Industrial Design student focused on sustainable design solutions. Passionate about creating products that make a positive impact on the world.",
             interests: ["Design", "Sustainability", "Photography", "Yoga"],
             clubs: ["Design Society", "Sustainability Club", "Photo Club"],
-            bio: "Industrial Design student focused on sustainable design solutions. Passionate about creating products that make a positive impact on the world.",
-            imageName: "person6"
+            personalityAnswers: ["Environmentally conscious", "Creative visionary", "Collaborative", "Purpose driven"]
         ),
         UserProfile(
+            id: UUID().uuidString,
+            profilePhotoURL: nil,
             name: "David Park",
             username: "davidpark",
+            year: "2025",
             major: "Computer Science",
-            year: "Graduate Student",
-            threads: ["@davidpark.gt"],
+            bio: "CS grad student researching machine learning applications. Love discussing tech trends over good coffee and exploring Georgia's hiking trails.",
             interests: ["AI/ML", "Gaming", "Coffee", "Hiking"],
             clubs: ["AI Research Group", "Gaming Society", "Graduate Student Association"],
-            bio: "CS grad student researching machine learning applications. Love discussing tech trends over good coffee and exploring Georgia's hiking trails.",
-            imageName: "person7"
+            personalityAnswers: ["Analytical thinker", "Tech enthusiast", "Outdoor lover", "Research focused"]
         )
     ]
     
@@ -191,11 +195,12 @@ struct ProfileCard: View {
                     Spacer()
                     
                     VStack(spacing: 12) {
-                        Image(profile.imageName.isEmpty ? "AppIcon" : profile.imageName)
+                        Image(systemName: "person.circle.fill")
                             .resizable()
                             .scaledToFill()
                             .frame(width: 120, height: 120)
                             .clipShape(Circle())
+                            .foregroundColor(.gray)
                             .shadow(radius: 8)
                         
                         VStack(spacing: 4) {

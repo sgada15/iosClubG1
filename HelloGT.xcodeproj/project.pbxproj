@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		328540C12ECCD8310021D1D5 /* ModelUserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 328540C02ECCD8310021D1D5 /* ModelUserProfile.swift */; };
 		329934472ECABD75004FB772 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 329934462ECABD75004FB772 /* FirebaseAnalytics */; };
 		329934492ECABD75004FB772 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 329934482ECABD75004FB772 /* FirebaseAuth */; };
 		3299344B2ECABD75004FB772 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3299344A2ECABD75004FB772 /* FirebaseFirestore */; };
@@ -17,6 +18,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		328540C02ECCD8310021D1D5 /* ModelUserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelUserProfile.swift; sourceTree = "<group>"; };
 		32D747152EB3CC4000A15D5A /* HelloGT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloGT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		337692E72ECAD43900DCDEBE /* AuthenticationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationManager.swift; sourceTree = "<group>"; };
 		337692E92ECAD45900DCDEBE /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
@@ -53,6 +55,7 @@
 				32D747162EB3CC4000A15D5A /* Products */,
 				337692E72ECAD43900DCDEBE /* AuthenticationManager.swift */,
 				337692E92ECAD45900DCDEBE /* AuthenticationView.swift */,
+				328540C02ECCD8310021D1D5 /* ModelUserProfile.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -146,6 +149,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				328540C12ECCD8310021D1D5 /* ModelUserProfile.swift in Sources */,
 				337692EA2ECAD45900DCDEBE /* AuthenticationView.swift in Sources */,
 				337692E82ECAD43900DCDEBE /* AuthenticationManager.swift in Sources */,
 			);

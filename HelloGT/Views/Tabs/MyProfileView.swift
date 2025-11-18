@@ -14,15 +14,15 @@ struct MyProfileView: View {
     // Sample profile data for current user - you'll replace this later
     @State private var currentUserProfile: UserProfile = UserProfile(
         id: "current-user",
+        profilePhotoURL: nil,
         name: "Alex Johnson",
         username: "alexjohnson",
+        year: "2025",
         major: "Computer Science",
-        year: "Senior",
-        threads: ["@alexjohnson.gt"],
+        bio: "Computer Science student passionate about software development and outdoor adventures. Love building apps and capturing moments through photography.",
         interests: ["Coding", "Hiking", "Photography", "Music"],
         clubs: ["CS Club", "Outdoor Adventures", "Photography Society"],
-        bio: "Computer Science student passionate about software development and outdoor adventures. Love building apps and capturing moments through photography.",
-        imageName: "AppIcon"
+        personalityAnswers: ["Problem solver", "Adventure seeker", "Creative", "Team player"]
     )
     
     @State private var showEditProfile = false

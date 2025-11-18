@@ -68,11 +68,12 @@ struct EditProfileView: View {
             Section(header: Text("Profile Picture")) {
                 // Placeholder - you can add an image picker later
                 HStack {
-                    Image(profile.imageName)
+                    Image(systemName: "person.circle.fill")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 60, height: 60)
                         .clipShape(Circle())
+                        .foregroundColor(.gray)
 
                     Text("Tap to change (coming soon)")
                         .foregroundColor(.secondary)
