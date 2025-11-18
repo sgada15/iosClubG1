@@ -4,135 +4,80 @@
 //
 //  Created by Sanaa Gada on 11/10/25.
 //
-// test changes !!
+
 import SwiftUI
 
-struct SavedProfile: Identifiable, Equatable {
-    let id = UUID()
-    let name: String
-    let major: String
-    let year: String
-    let bio: String
-    let threads: [String]
-    let interests: [String]
-    let clubs: [String]
-    let dateSaved: Date
-    let imageName: String
-}
-
-extension SavedProfile {
-    var asUserProfile: UserProfile {
-        UserProfile(
-            id: id.uuidString,
-            name: name,
-            username: name.lowercased().replacingOccurrences(of: " ", with: ""),
-            major: major,
-            year: year,
-            threads: threads,
-            interests: interests,
-            clubs: clubs,
-            bio: bio,
-            imageName: imageName
-        )
-    }
-}
-
-
 struct SavedProfilesView: View {
-    @State private var savedProfiles: [SavedProfile] = [
-        SavedProfile(
-            name: "Ava Patel",
-            major: "Biomedical Engineering",
-            year: "Junior",
-            bio: "Biomedical Engineering major passionate about research and volunteering. Always looking for opportunities to make a difference in healthcare.",
-            threads: ["@avapatel.gt"],
-            interests: ["Research", "Volunteering", "Healthcare", "Innovation"],
-            clubs: ["Biomedical Engineering Society", "Volunteer Network"],
-            dateSaved: Date(),
-            imageName: "person1"
-        ),
-        SavedProfile(
-            name: "Liam Chen",
-            major: "Computer Science",
-            year: "Senior",
-            bio: "CS major who loves hackathons, startups, and bubble tea. Building the next big thing in tech.",
-            threads: ["@liamchen.gt"],
-            interests: ["Hackathons", "Startups", "Machine Learning", "Web Development"],
-            clubs: ["GT Hackers", "Startup Exchange", "CS Society"],
-            dateSaved: Date().addingTimeInterval(-86400),
-            imageName: "person2"
-        ),
-        SavedProfile(
-            name: "Nia Roberts",
-            major: "Psychology",
-            year: "Sophomore",
-            bio: "Psych major exploring mental health advocacy and art therapy. Passionate about helping others and creative expression.",
-            threads: ["@niaroberts.gt"],
-            interests: ["Mental Health", "Art Therapy", "Advocacy", "Creative Writing"],
-            clubs: ["Psychology Club", "Mental Health Awareness", "Art Therapy Group"],
-            dateSaved: Date().addingTimeInterval(-172800),
-            imageName: "person3"
-        )
-    ]
-    
-    @State private var profileToDelete: SavedProfile? = nil
-    @State private var showDeleteAlert = false
+    @StateObject private var savedProfilesManager = SavedProfilesManager()
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(savedProfiles) { profile in
-                        NavigationLink {
-                            OtherProfileDetailView(profile: profile.asUserProfile, isCurrentUser: false)
-                        } label: {
-                            SavedProfileCard(profile: profile) {
-                                profileToDelete = profile
-                                showDeleteAlert = true
+            Group {
+                if savedProfilesManager.savedProfiles.isEmpty {
+                    // Empty State
+                    VStack(spacing: 20) {
+                        Image(systemName: "bookmark")
+                            .font(.system(size: 60))
+                            .foregroundColor(.secondary)
+                        
+                        Text("No Saved Profiles")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text("Save profiles you're interested in from the Explore tab to see them here.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        // Optional: Add a button to go to explore
+                        Button("Explore Profiles") {
+                            // This would need to be handled by a parent view to switch tabs
+                            // For now, we'll just show the button
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .padding()
+                } else {
+                    // List of saved profiles
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(savedProfilesManager.savedProfiles, id: \.id) { profile in
+                                NavigationLink {
+                                    OtherProfileDetailView(profile: profile, isCurrentUser: false)
+                                } label: {
+                                    SavedProfileCard(
+                                        profile: profile,
+                                        onUnsave: {
+                                            savedProfilesManager.unsaveProfile(profile)
+                                        }
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
-                        .buttonStyle(.plain)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .bottom)),
-                            removal: .opacity.combined(with: .move(edge: .leading))
-                        ))
+                        .padding(.vertical)
                     }
                 }
-                .padding(.vertical)
             }
             .navigationTitle("Saved Profiles")
-            .animation(.easeInOut(duration: 0.3), value: savedProfiles)
-            .alert("Delete Profile?", isPresented: $showDeleteAlert) {
-                Button("Delete", role: .destructive) {
-                    if let profile = profileToDelete { delete(profile) }
-                }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Are you sure you want to delete \(profileToDelete?.name ?? "this") profile?")
-            }
-        }
-    }
-
-    
-    private func delete(_ profile: SavedProfile) {
-        withAnimation {
-            savedProfiles.removeAll { $0.id == profile.id }
         }
     }
 }
 
 struct SavedProfileCard: View {
-    let profile: SavedProfile
-    let onDeleteTapped: () -> Void
+    let profile: UserProfile
+    let onUnsave: () -> Void
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Profile picture
-            Image(profile.imageName)
+            Image(systemName: "person.circle.fill")
                 .resizable()
                 .scaledToFill()
                 .frame(width: 55, height: 55)
                 .clipShape(Circle())
+                .foregroundColor(.gray)
                 .shadow(radius: 2)
             
             // Info section
@@ -140,21 +85,35 @@ struct SavedProfileCard: View {
                 HStack {
                     Text(profile.name)
                         .font(.headline)
+                        .foregroundColor(.primary)
                     Spacer()
-                    Text(profile.dateSaved, style: .date)
-                        .font(.caption)
-                        .foregroundColor(.gray)
                 }
-                Text(profile.bio)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
+                
+                if !profile.major.isEmpty || !profile.year.isEmpty {
+                    Text([profile.major, profile.year].filter { !$0.isEmpty }.joined(separator: " • "))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                if !profile.bio.isEmpty {
+                    Text(profile.bio)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+                
+                if !profile.interests.isEmpty {
+                    Text(profile.interests.prefix(3).joined(separator: " • "))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
             
-            // Trash button
-            Button(action: onDeleteTapped) {
-                Image(systemName: "trash")
-                    .foregroundColor(.red)
+            // Unsave button
+            Button(action: onUnsave) {
+                Image(systemName: "bookmark.fill")
+                    .foregroundColor(.accentColor)
                     .padding(8)
             }
             .buttonStyle(BorderlessButtonStyle())

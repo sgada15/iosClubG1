@@ -7,14 +7,14 @@
 import Foundation
 
 struct UserProfile: Identifiable, Codable {
-    var id = UUID().uuidString
+    var id: String
+    var profilePhotoURL: String?
     var name: String
-    var username: String = ""
+    var username: String
+    var year: String // 2025, 2026, 2027, 2028, 2029, 2030
     var major: String
-    var year: String
-    var threads: [String]
+    var bio: String
     var interests: [String]
     var clubs: [String]
-    var bio: String
-    var imageName: String // temporarily local image name
+    var personalityAnswers: [String] // size 4
 }

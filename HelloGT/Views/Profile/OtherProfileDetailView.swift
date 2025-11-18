@@ -9,10 +9,17 @@ struct OtherProfileDetailView: View {
         ScrollView {
             VStack(spacing: 16) {
                 VStack(spacing: 12) {
-                    Image(profile.imageName.isEmpty ? "AppIcon" : profile.imageName)
-                        .resizable().scaledToFill()
-                        .frame(width: 96, height: 96)
-                        .clipShape(Circle()).shadow(radius: 6)
+                    AsyncImage(url: URL(string: profile.profilePhotoURL ?? "")) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Image("AppIcon")
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .frame(width: 96, height: 96)
+                    .clipShape(Circle()).shadow(radius: 6)
                     Text(profile.name).font(.title2).bold()
                     Text([profile.major, profile.year].filter { !$0.isEmpty }.joined(separator: " • "))
                         .font(.subheadline).foregroundStyle(.secondary)
@@ -22,13 +29,6 @@ struct OtherProfileDetailView: View {
 
                 if !profile.bio.isEmpty {
                     section("About") { Text(profile.bio).foregroundStyle(.secondary) }
-                }
-
-                if !profile.threads.isEmpty {
-                    section("Threads") {
-                        Text(profile.threads.joined(separator: ", "))
-                            .foregroundStyle(.secondary)
-                    }
                 }
 
                 if !profile.interests.isEmpty {

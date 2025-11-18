@@ -130,20 +130,28 @@ class AuthenticationManager: ObservableObject {
     // MARK: - Create Initial User Profile
     private func createInitialUserProfile(uid: String, email: String, firstName: String, lastName: String) async throws {
         let fullName = "\(firstName) \(lastName)"
+        let username = "\(firstName.lowercased())\(lastName.lowercased())" // Generate basic username
+        
         let userProfile = UserProfile(
             id: uid,
+            profilePhotoURL: nil,
             name: fullName,
-            major: "", // Will be filled during profile setup
+            username: username,
             year: "", // Will be filled during profile setup
-            threads: [],
+            major: "", // Will be filled during profile setup
+            bio: "",
             interests: [],
             clubs: [],
-            bio: "",
-            imageName: "AppIcon" // Default image
+            personalityAnswers: ["", "", "", ""] // Empty personality answers to fill later
         )
         
         let profileData = try userProfile.toDictionary()
-        try await db.collection("users").document(uid).setData(profileData)
+        var finalData = profileData
+        finalData["createdAt"] = FieldValue.serverTimestamp()
+        finalData["updatedAt"] = FieldValue.serverTimestamp()
+        finalData["email"] = email // Store email with profile
+        
+        try await db.collection("users").document(uid).setData(finalData)
         
         // Also create user metadata
         let userMetadata: [String: Any] = [
@@ -186,6 +194,130 @@ class AuthenticationManager: ObservableObject {
         }
         
         return error.localizedDescription
+    }
+    
+    // MARK: - Profile Management
+    
+    /// Load user profile from Firestore
+    func loadUserProfile(uid: String) async throws -> UserProfile? {
+        let document = try await db.collection("users").document(uid).getDocument()
+        
+        guard document.exists, let data = document.data() else {
+            return nil
+        }
+        
+        // Remove Firebase-specific fields that aren't part of UserProfile
+        var cleanedData = data
+        cleanedData.removeValue(forKey: "createdAt")
+        cleanedData.removeValue(forKey: "updatedAt")
+        cleanedData.removeValue(forKey: "email")
+        
+        return try UserProfile.fromDictionary(cleanedData)
+    }
+    
+    /// Save user profile to Firestore
+    func saveUserProfile(_ profile: UserProfile) async throws {
+        var profileData = try profile.toDictionary()
+        profileData["updatedAt"] = FieldValue.serverTimestamp()
+        
+        try await db.collection("users").document(profile.id).setData(profileData, merge: true)
+    }
+    
+    /// Get current user's profile
+    func getCurrentUserProfile() async throws -> UserProfile? {
+        guard let uid = user?.uid else { return nil }
+        return try await loadUserProfile(uid: uid)
+    }
+    
+    /// Fetch all users for explore feed (excluding current user)
+    func fetchAllUsers() async throws -> [UserProfile] {
+        print("🔍 Starting to fetch all users...")
+        let snapshot = try await db.collection("users").getDocuments()
+        let currentUserID = user?.uid ?? ""
+        print("📊 Total documents in users collection: \(snapshot.documents.count)")
+        print("🚫 Current user ID to exclude: \(currentUserID)")
+        
+        var allUsers: [UserProfile] = []
+        
+        for document in snapshot.documents {
+            print("📄 Processing document: \(document.documentID)")
+            
+            // Skip current user
+            if document.documentID == currentUserID {
+                print("⏭️ Skipping current user: \(document.documentID)")
+                continue
+            }
+            
+            let data = document.data()
+            print("📋 Raw data for \(document.documentID): \(data.keys)")
+            
+            // Create UserProfile with flexible field handling - no JSON parsing needed
+            let userProfile = UserProfile(
+                id: document.documentID, // Use document ID as fallback
+                profilePhotoURL: data["profilePhotoURL"] as? String,
+                name: data["name"] as? String ?? "Unknown User",
+                username: data["username"] as? String ?? "user",
+                year: data["year"] as? String ?? "",
+                major: data["major"] as? String ?? "",
+                bio: data["bio"] as? String ?? "",
+                interests: data["interests"] as? [String] ?? [],
+                clubs: data["clubs"] as? [String] ?? [],
+                personalityAnswers: data["personalityAnswers"] as? [String] ?? ["", "", "", ""]
+            )
+            
+            print("✅ Successfully created profile for: \(userProfile.name) (@\(userProfile.username))")
+            print("   📝 Major: '\(userProfile.major)' | Year: '\(userProfile.year)' | Bio: '\(userProfile.bio.prefix(50))'")
+            
+            // Only skip if the user has no meaningful information at all
+            if userProfile.name == "Unknown User" && userProfile.major.isEmpty && userProfile.bio.isEmpty && userProfile.interests.isEmpty {
+                print("⚠️ Skipping user with no meaningful profile information")
+                continue
+            }
+            
+            allUsers.append(userProfile)
+        }
+        
+        print("📱 Final result: \(allUsers.count) users for explore feed")
+        for user in allUsers {
+            print("👤 User: \(user.name) | Major: \(user.major) | Year: \(user.year)")
+        }
+        
+        return allUsers
+    }
+    
+    /// Create profile for existing user who doesn't have one
+    func createProfileForCurrentUser() async throws -> UserProfile? {
+        guard let user = user else { return nil }
+        
+        let displayName = user.displayName ?? ""
+        let email = user.email ?? ""
+        
+        // Split display name into first/last name
+        let nameParts = displayName.split(separator: " ")
+        let firstName = nameParts.first.map(String.init) ?? ""
+        let lastName = nameParts.count > 1 ? nameParts.dropFirst().joined(separator: " ") : ""
+        
+        // Generate username from email or name
+        let username = email.split(separator: "@").first?.lowercased() ?? firstName.lowercased()
+        
+        let newProfile = UserProfile(
+            id: user.uid,
+            profilePhotoURL: nil,
+            name: displayName.isEmpty ? "User" : displayName,
+            username: String(username),
+            year: "",
+            major: "",
+            bio: "",
+            interests: [],
+            clubs: [],
+            personalityAnswers: ["", "", "", ""]
+        )
+        
+        // Save to Firebase
+        try await saveUserProfile(newProfile)
+        
+        print("✅ Created new profile for existing user: \(email)")
+        return newProfile
     }
 }
 

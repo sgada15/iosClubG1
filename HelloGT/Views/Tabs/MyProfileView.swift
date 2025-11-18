@@ -14,15 +14,15 @@ struct MyProfileView: View {
     // Sample profile data for current user - you'll replace this later
     @State private var currentUserProfile: UserProfile = UserProfile(
         id: "current-user",
+        profilePhotoURL: nil,
         name: "Alex Johnson",
         username: "alexjohnson",
+        year: "2025",
         major: "Computer Science",
-        year: "Senior",
-        threads: ["@alexjohnson.gt"],
+        bio: "Computer Science student passionate about software development and outdoor adventures. Love building apps and capturing moments through photography.",
         interests: ["Coding", "Hiking", "Photography", "Music"],
         clubs: ["CS Club", "Outdoor Adventures", "Photography Society"],
-        bio: "Computer Science student passionate about software development and outdoor adventures. Love building apps and capturing moments through photography.",
-        imageName: "AppIcon"
+        personalityAnswers: ["Problem solver", "Adventure seeker", "Creative", "Team player"]
     )
     
     @State private var showEditProfile = false
@@ -78,9 +78,32 @@ struct MyProfileView: View {
     private func loadCurrentUserProfile() {
         // Update profile with current user info from auth
         if let user = authManager.user {
-            currentUserProfile.id = user.uid
-            if let displayName = user.displayName, !displayName.isEmpty {
-                currentUserProfile.name = displayName
+            // Load profile from Firebase
+            Task {
+                do {
+                    if let loadedProfile = try await authManager.getCurrentUserProfile() {
+                        await MainActor.run {
+                            currentUserProfile = loadedProfile
+                        }
+                    } else {
+                        // No profile exists, update with user auth info
+                        await MainActor.run {
+                            currentUserProfile.id = user.uid
+                            if let displayName = user.displayName, !displayName.isEmpty {
+                                currentUserProfile.name = displayName
+                            }
+                        }
+                    }
+                } catch {
+                    print("Error loading user profile: \(error)")
+                    // Fallback to updating with auth info
+                    await MainActor.run {
+                        currentUserProfile.id = user.uid
+                        if let displayName = user.displayName, !displayName.isEmpty {
+                            currentUserProfile.name = displayName
+                        }
+                    }
+                }
             }
         }
     }
