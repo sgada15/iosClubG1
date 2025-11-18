@@ -11,14 +11,27 @@ import FirebaseAuth
 
 @main
 struct HelloGTApp: App {
+    @StateObject private var appState = AppState()
+    
     init() {
-            FirebaseApp.configure()
-            print("✅ Firebase configured successfully!")
-        }
+        FirebaseApp.configure()
+        print("✅ Firebase configured successfully!")
+    }
     
     var body: some Scene {
         WindowGroup {
-            LaunchView()
+            ZStack {
+                if appState.hasCompletedLaunch {
+                    AuthenticationView()
+                        .environmentObject(appState)
+                        .transition(.opacity)
+                } else {
+                    LaunchView()
+                        .environmentObject(appState)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.6), value: appState.hasCompletedLaunch)
         }
     }
 }

@@ -25,6 +25,7 @@ extension SavedProfile {
         UserProfile(
             id: id.uuidString,
             name: name,
+            username: name.lowercased().replacingOccurrences(of: " ", with: ""),
             major: major,
             year: year,
             threads: threads,

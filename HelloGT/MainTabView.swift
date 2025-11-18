@@ -1,18 +1,15 @@
-//
-//  MainTabView.swift
-//  HelloGT
-//
-//  Created by Sanaa Gada on 11/10/25.
-//
 import SwiftUI
 
 struct MainTabView: View {
+    @EnvironmentObject var authManager: AuthenticationManager
+    
     var body: some View {
         TabView {
             ExploreView()
                 .tabItem {
                     Label("Explore", systemImage: "sparkles")
                 }
+                .environmentObject(authManager)
 
             EventsView()
                 .tabItem {
@@ -23,6 +20,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Saved", systemImage: "bookmark")
                 }
+                .environmentObject(authManager)
 
             FriendsView()
                 .tabItem {
@@ -33,6 +31,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label("My Profile", systemImage: "person.crop.circle")
                 }
+                .environmentObject(authManager)
         }
         .tint(.accentColor)
     }

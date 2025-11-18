@@ -51,11 +51,6 @@ struct OtherProfileDetailView: View {
         }
         .navigationTitle(isCurrentUser ? "My Profile" : profile.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if isCurrentUser {
-                ToolbarItem(placement: .topBarTrailing) { Button("Edit") { onEdit?() } }
-            }
-        }
     }
 
     @ViewBuilder private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {

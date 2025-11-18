@@ -12,7 +12,6 @@ struct EditProfileView: View {
 
     @Environment(\.dismiss) private var dismiss
     
-    @State private var newThread = ""
     @State private var newInterest = ""
     @State private var newClub = ""
 
@@ -20,26 +19,9 @@ struct EditProfileView: View {
         Form {
             Section(header: Text("Basic Info")) {
                 TextField("Name", text: $profile.name)
+                TextField("Username", text: $profile.username)
                 TextField("Major", text: $profile.major)
                 TextField("Year", text: $profile.year)
-            }
-
-            Section(header: Text("Threads")) {
-                ForEach(profile.threads, id: \.self) { thread in
-                    Text(thread)
-                }
-                .onDelete { index in
-                    profile.threads.remove(atOffsets: index)
-                }
-
-                HStack {
-                    TextField("Add new thread", text: $newThread)
-                    Button("Add") {
-                        guard !newThread.isEmpty else { return }
-                        profile.threads.append(newThread)
-                        newThread = ""
-                    }
-                }
             }
 
             Section(header: Text("Interests")) {

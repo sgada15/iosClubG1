@@ -1,4 +1,4 @@
-//
+////
 //  LaunchView.swift
 //  HelloGT
 //
@@ -13,7 +13,6 @@ struct LaunchView: View {
     @StateObject private var viewModel = LaunchViewModel()
     @State private var showBee = false
     @State private var showSlogan = false
-    @State private var fadeOut = false
 
     var body: some View {
         ZStack {
@@ -28,13 +27,13 @@ struct LaunchView: View {
                     .scaledToFit()
                     .frame(width: 100, height: 100)
                     .offset(x: showBee ? 0 : -300, y: showBee ? 0 : -200)
-                    .opacity(showBee && !fadeOut ? 1 : 0)
+                    .opacity(showBee ? 1 : 0)
                     .animation(.easeOut(duration: 1.2), value: showBee)
 
                 // Animated "HelloGT"
                 HelloGTAnimatedText()
                     .frame(height: 120)
-                    .opacity(showSlogan && !fadeOut ? 1 : 0)
+                    .opacity(showSlogan ? 1 : 0)
                     .scaleEffect(showSlogan ? 1.0 : 0.95)
                     .animation(.easeInOut(duration: 0.6).delay(0.5), value: showSlogan)
 
@@ -42,18 +41,16 @@ struct LaunchView: View {
                 Text("MEET THE BUZZ")
                     .font(.headline)
                     .foregroundColor(.gray)
-                    .opacity(showSlogan && !fadeOut ? 1 : 0)
+                    .opacity(showSlogan ? 1 : 0)
                     .animation(.easeIn(duration: 2.0).delay(1.0), value: showSlogan)
                 
                 Text("The social app for every Yellow Jacket.")
                     .font(.subheadline)
                     .foregroundColor(.gray)
-                    .opacity(showSlogan && !fadeOut ? 1 : 0)
+                    .opacity(showSlogan ? 1 : 0)
                     .animation(.easeIn(duration: 2.0).delay(1.3), value: showSlogan)
             }
             .padding()
-            .opacity(fadeOut ? 0 : 1)
-            .animation(.easeInOut(duration: 0.8), value: fadeOut)
             .onAppear {
                 // Animations
                 withAnimation { showBee = true }
@@ -62,16 +59,10 @@ struct LaunchView: View {
                 }
                 viewModel.startLaunchSequence()
             }
-            // When ViewModel says "go," start fade out then navigate
+            // When ViewModel says "go," navigate to auth
             .onChange(of: viewModel.shouldNavigate) { newValue in
                 if newValue {
-                    // First fade out the launch content
-                    withAnimation(.easeInOut(duration: 0.8)) {
-                        fadeOut = true
-                    }
-                    
-                    // Then navigate after fade completes
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    withAnimation(.easeInOut(duration: 1.0)) {
                         appState.completeLaunch()
                     }
                 }

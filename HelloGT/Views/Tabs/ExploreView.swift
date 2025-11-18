@@ -16,6 +16,7 @@ struct ExploreView: View {
     @State private var exploreProfiles: [UserProfile] = [
         UserProfile(
             name: "Sarah Kim",
+            username: "sarahkim",
             major: "Mechanical Engineering", 
             year: "Junior",
             threads: ["@sarahkim.gt"],
@@ -26,6 +27,7 @@ struct ExploreView: View {
         ),
         UserProfile(
             name: "Marcus Thompson",
+            username: "marcusthompson",
             major: "Business Administration",
             year: "Sophomore", 
             threads: ["@marcusthompson.gt"],
@@ -36,6 +38,7 @@ struct ExploreView: View {
         ),
         UserProfile(
             name: "Emma Rodriguez",
+            username: "emmarodriguez",
             major: "Industrial Design",
             year: "Senior",
             threads: ["@emmarodriguez.gt"],
@@ -46,6 +49,7 @@ struct ExploreView: View {
         ),
         UserProfile(
             name: "David Park",
+            username: "davidpark",
             major: "Computer Science",
             year: "Graduate Student",
             threads: ["@davidpark.gt"],

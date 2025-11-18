@@ -12,10 +12,14 @@
 		3299344B2ECABD75004FB772 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3299344A2ECABD75004FB772 /* FirebaseFirestore */; };
 		3299344D2ECABD75004FB772 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 3299344C2ECABD75004FB772 /* FirebaseMessaging */; };
 		3299344F2ECABD75004FB772 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 3299344E2ECABD75004FB772 /* FirebaseStorage */; };
+		337692E82ECAD43900DCDEBE /* AuthenticationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337692E72ECAD43900DCDEBE /* AuthenticationManager.swift */; };
+		337692EA2ECAD45900DCDEBE /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337692E92ECAD45900DCDEBE /* AuthenticationView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		32D747152EB3CC4000A15D5A /* HelloGT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloGT.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		337692E72ECAD43900DCDEBE /* AuthenticationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationManager.swift; sourceTree = "<group>"; };
+		337692E92ECAD45900DCDEBE /* AuthenticationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -47,6 +51,8 @@
 			children = (
 				32D747172EB3CC4000A15D5A /* HelloGT */,
 				32D747162EB3CC4000A15D5A /* Products */,
+				337692E72ECAD43900DCDEBE /* AuthenticationManager.swift */,
+				337692E92ECAD45900DCDEBE /* AuthenticationView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -140,6 +146,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				337692EA2ECAD45900DCDEBE /* AuthenticationView.swift in Sources */,
+				337692E82ECAD43900DCDEBE /* AuthenticationManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

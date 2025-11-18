@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct MyProfileView: View {
+    @EnvironmentObject var authManager: AuthenticationManager
+    
     // Sample profile data for current user - you'll replace this later
     @State private var currentUserProfile: UserProfile = UserProfile(
         id: "current-user",
         name: "Alex Johnson",
+        username: "alexjohnson",
         major: "Computer Science",
         year: "Senior",
         threads: ["@alexjohnson.gt"],
@@ -22,6 +26,7 @@ struct MyProfileView: View {
     )
     
     @State private var showEditProfile = false
+    @State private var showSignOutAlert = false
     
     var body: some View {
         NavigationView {
@@ -32,12 +37,50 @@ struct MyProfileView: View {
                     showEditProfile = true
                 }
             )
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Edit Profile") {
+                            showEditProfile = true
+                        }
+                        
+                        Divider()
+                        
+                        Button("Sign Out", role: .destructive) {
+                            showSignOutAlert = true
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                }
+            }
             .sheet(isPresented: $showEditProfile) {
                 NavigationView {
                     EditProfileView(profile: $currentUserProfile)
                         .navigationTitle("Edit Profile")
                         .navigationBarTitleDisplayMode(.inline)
                 }
+            }
+            .alert("Sign Out", isPresented: $showSignOutAlert) {
+                Button("Sign Out", role: .destructive) {
+                    authManager.signOut()
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Are you sure you want to sign out?")
+            }
+        }
+        .onAppear {
+            loadCurrentUserProfile()
+        }
+    }
+    
+    private func loadCurrentUserProfile() {
+        // Update profile with current user info from auth
+        if let user = authManager.user {
+            currentUserProfile.id = user.uid
+            if let displayName = user.displayName, !displayName.isEmpty {
+                currentUserProfile.name = displayName
             }
         }
     }

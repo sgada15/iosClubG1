@@ -9,6 +9,7 @@ import Foundation
 struct UserProfile: Identifiable, Codable {
     var id = UUID().uuidString
     var name: String
+    var username: String = ""
     var major: String
     var year: String
     var threads: [String]
