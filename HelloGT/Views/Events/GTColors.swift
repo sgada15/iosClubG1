@@ -1,6 +1,6 @@
 //
 //  GTColors.swift
-//  HelloGT
+//  BuzzBuddy
 //
 //  Created by Assistant on 11/19/25.
 //
@@ -126,12 +126,12 @@ extension View {
     }
 }
 
-// MARK: - HelloGT UI Styles
+// MARK: - BuzzBuddy UI Styles
 
-struct HelloGTButtonStyle: ButtonStyle {
-    let variant: HelloGTButtonVariant
+struct BuzzBuddyButtonStyle: ButtonStyle {
+    let variant: BuzzBuddyButtonVariant
     
-    enum HelloGTButtonVariant {
+    enum BuzzBuddyButtonVariant {
         case primary
         case secondary  
         case outline
@@ -191,27 +191,27 @@ struct HelloGTButtonStyle: ButtonStyle {
 
 // MARK: - Button Style Convenience Extensions
 
-extension ButtonStyle where Self == HelloGTButtonStyle {
-    static var gtPrimary: HelloGTButtonStyle {
-        HelloGTButtonStyle(variant: .primary)
+extension ButtonStyle where Self == BuzzBuddyButtonStyle {
+    static var gtPrimary: BuzzBuddyButtonStyle {
+        BuzzBuddyButtonStyle(variant: .primary)
     }
     
-    static var gtSecondary: HelloGTButtonStyle {
-        HelloGTButtonStyle(variant: .secondary)
+    static var gtSecondary: BuzzBuddyButtonStyle {
+        BuzzBuddyButtonStyle(variant: .secondary)
     }
     
-    static var gtOutline: HelloGTButtonStyle {
-        HelloGTButtonStyle(variant: .outline)
+    static var gtOutline: BuzzBuddyButtonStyle {
+        BuzzBuddyButtonStyle(variant: .outline)
     }
     
-    static var gtGlass: HelloGTButtonStyle {
-        HelloGTButtonStyle(variant: .glass)
+    static var gtGlass: BuzzBuddyButtonStyle {
+        BuzzBuddyButtonStyle(variant: .glass)
     }
 }
 
-// MARK: - HelloGT Card Style
+// MARK: - BuzzBuddy Card Style
 
-struct HelloGTCardStyle: ViewModifier {
+struct BuzzBuddyCardStyle: ViewModifier {
     let isPressed: Bool
     
     func body(content: Content) -> some View {
@@ -232,7 +232,7 @@ struct HelloGTCardStyle: ViewModifier {
 
 extension View {
     func gtCardStyle(isPressed: Bool = false) -> some View {
-        self.modifier(HelloGTCardStyle(isPressed: isPressed))
+        self.modifier(BuzzBuddyCardStyle(isPressed: isPressed))
     }
 }
 

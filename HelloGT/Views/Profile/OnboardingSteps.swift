@@ -1,6 +1,6 @@
 //
 //  OnboardingSteps.swift
-//  HelloGT
+//  BuzzBuddy
 //
 //  Created by Assistant on 11/18/25.
 //
@@ -19,15 +19,15 @@ struct WelcomeStepView: View {
             VStack(spacing: 20) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 80))
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(.gtGold)
                 
                 VStack(spacing: 12) {
-                    Text("Welcome to HelloGT!")
+                    Text("Welcome to BuzzBuddy!")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .multilineTextAlignment(.center)
                     
-                    Text("Let's create your profile to connect with fellow Yellow Jackets")
+                    Text("Where the buzz at? Let's create your profile to connect with fellow Yellow Jackets")
                         .font(.body)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -41,7 +41,7 @@ struct WelcomeStepView: View {
                 Button("Get Started") {
                     onNext()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.gtPrimary)
                 .controlSize(.large)
                 .frame(maxWidth: .infinity)
                 
@@ -53,7 +53,7 @@ struct WelcomeStepView: View {
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(LinearGradient.gtBackgroundGradient)
     }
 }
 
@@ -151,14 +151,14 @@ struct BasicInfoStepView: View {
                     Button("Back") {
                         onBack()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.gtSecondary)
                     .frame(maxWidth: .infinity)
                     .disabled(isUploadingPhoto)
                     
                     Button("Continue") {
                         onNext()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.gtPrimary)
                     .frame(maxWidth: .infinity)
                     .disabled(!isStepValid || isUploadingPhoto)
                 }
@@ -167,7 +167,7 @@ struct BasicInfoStepView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(LinearGradient.gtBackgroundGradient)
         .alert("Photo Upload Error", isPresented: $showPhotoError) {
             Button("Try Again") {
                 selectedPhoto = nil
@@ -220,7 +220,11 @@ struct BioStepView: View {
             VStack(spacing: 12) {
                 ZStack(alignment: .topLeading) {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.systemGray6))
+                        .fill(Color.gtCardBackground)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gtPastelYellow.opacity(0.3), lineWidth: 1)
+                        )
                         .frame(height: 120)
                     
                     TextEditor(text: $profile.bio)
@@ -242,13 +246,13 @@ struct BioStepView: View {
                 HStack {
                     Text("\(characterCount)/20 minimum")
                         .font(.caption)
-                        .foregroundColor(characterCount >= 20 ? .green : .secondary)
+                        .foregroundColor(characterCount >= 20 ? .gtSuccess : .secondary)
                     
                     Spacer()
                     
                     if characterCount >= 20 {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(.gtSuccess)
                             .font(.caption)
                     }
                 }
@@ -262,13 +266,13 @@ struct BioStepView: View {
                 Button("Back") {
                     onBack()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.gtSecondary)
                 .frame(maxWidth: .infinity)
                 
                 Button("Continue") {
                     onNext()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.gtPrimary)
                 .frame(maxWidth: .infinity)
                 .disabled(!isStepValid)
             }
@@ -276,7 +280,7 @@ struct BioStepView: View {
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(LinearGradient.gtBackgroundGradient)
     }
 }
 
@@ -299,13 +303,13 @@ struct ValidatedTextField: View {
                 
                 if isValid {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(.gtSuccess)
                         .font(.subheadline)
                 }
             }
             
             TextField(placeholder, text: $text)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(GTTextFieldStyle())
                 .onChange(of: text) { newValue in
                     isValid = validation(newValue)
                 }
@@ -332,7 +336,7 @@ struct YearPickerField: View {
                 
                 if isValid {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(.gtSuccess)
                         .font(.subheadline)
                 }
             }
@@ -357,7 +361,11 @@ struct YearPickerField: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color(.systemGray6))
+                .background(Color.gtCardBackground)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.gtPastelYellow.opacity(0.3), lineWidth: 1)
+                )
                 .cornerRadius(8)
             }
         }
@@ -400,7 +408,7 @@ struct InterestsStepView: View {
                 // Add new interest
                 HStack {
                     TextField("Add an interest", text: $newInterest)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(GTTextFieldStyle())
                     
                     Button("Add") {
                         guard !newInterest.isEmpty,
@@ -408,7 +416,7 @@ struct InterestsStepView: View {
                         profile.interests.append(newInterest)
                         newInterest = ""
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.gtPrimary)
                     .disabled(newInterest.isEmpty)
                 }
                 
@@ -424,7 +432,7 @@ struct InterestsStepView: View {
                             
                             if isStepValid {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
+                                    .foregroundColor(.gtSuccess)
                                     .font(.subheadline)
                             }
                         }
@@ -454,13 +462,13 @@ struct InterestsStepView: View {
                 Button("Back") {
                     onBack()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.gtSecondary)
                 .frame(maxWidth: .infinity)
                 
                 Button("Continue") {
                     onNext()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.gtPrimary)
                 .frame(maxWidth: .infinity)
                 .disabled(!isStepValid)
             }
@@ -468,7 +476,7 @@ struct InterestsStepView: View {
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(LinearGradient.gtBackgroundGradient)
     }
 }
 
@@ -505,7 +513,7 @@ struct ClubsStepView: View {
                 // Add new club
                 HStack {
                     TextField("Add a club or organization", text: $newClub)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(GTTextFieldStyle())
                     
                     Button("Add") {
                         guard !newClub.isEmpty,
@@ -513,7 +521,7 @@ struct ClubsStepView: View {
                         profile.clubs.append(newClub)
                         newClub = ""
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.gtPrimary)
                     .disabled(newClub.isEmpty)
                 }
                 
@@ -529,7 +537,7 @@ struct ClubsStepView: View {
                             
                             if isStepValid {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
+                                    .foregroundColor(.gtSuccess)
                                     .font(.subheadline)
                             }
                         }
@@ -559,13 +567,13 @@ struct ClubsStepView: View {
                 Button("Back") {
                     onBack()
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.gtSecondary)
                 .frame(maxWidth: .infinity)
                 
                 Button("Continue") {
                     onNext()
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.gtPrimary)
                 .frame(maxWidth: .infinity)
                 .disabled(!isStepValid)
             }
@@ -573,7 +581,7 @@ struct ClubsStepView: View {
             .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(LinearGradient.gtBackgroundGradient)
     }
 }
 
@@ -639,14 +647,14 @@ struct PersonalityStepView: View {
                     Button("Back") {
                         onBack()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.gtSecondary)
                     .frame(maxWidth: .infinity)
                     .disabled(isCompleting)
                     
                     Button(isCompleting ? "Creating Profile..." : "Complete Profile") {
                         onNext()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.gtPrimary)
                     .frame(maxWidth: .infinity)
                     .disabled(!isStepValid || isCompleting)
                 }
@@ -655,7 +663,7 @@ struct PersonalityStepView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
+        .background(LinearGradient.gtBackgroundGradient)
     }
     
     private func ensurePersonalityAnswersSize() {
@@ -686,7 +694,11 @@ struct InterestChip: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(Color(.systemGray5))
+        .background(Color.gtPastelYellow.opacity(0.3))
+        .overlay(
+            Capsule()
+                .stroke(Color.gtGold.opacity(0.4), lineWidth: 0.5)
+        )
         .clipShape(Capsule())
     }
 }
@@ -712,13 +724,13 @@ struct OnboardingPersonalityQuestion: View {
                 
                 if isValid {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(.gtSuccess)
                         .font(.subheadline)
                 }
             }
             
             TextField("Your answer...", text: $answer, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(GTTextFieldStyle())
                 .lineLimit(2...4)
         }
     }
@@ -745,7 +757,7 @@ struct ProfilePhotoPickerField: View {
                         .scaleEffect(0.8)
                 } else if isValid {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(.gtSuccess)
                         .font(.subheadline)
                 }
             }
@@ -767,7 +779,7 @@ struct ProfilePhotoPickerField: View {
                 .clipShape(Circle())
                 .overlay(
                     Circle()
-                        .stroke(Color(.systemGray4), lineWidth: 1)
+                        .stroke(Color.gtPastelYellow.opacity(0.5), lineWidth: 2)
                 )
                 
                 VStack(alignment: .leading, spacing: 8) {
@@ -790,7 +802,11 @@ struct ProfilePhotoPickerField: View {
                             .foregroundColor(.accentColor)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color.accentColor.opacity(0.1))
+                            .background(Color.gtGold.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Color.gtGold.opacity(0.3), lineWidth: 1)
+                            )
                             .cornerRadius(6)
                     }
                     .disabled(isUploading)
@@ -799,7 +815,11 @@ struct ProfilePhotoPickerField: View {
                 Spacer()
             }
             .padding(16)
-            .background(Color(.systemGray6))
+            .background(Color.gtCardBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.gtPastelYellow.opacity(0.3), lineWidth: 1)
+            )
             .cornerRadius(12)
         }
         .onChange(of: selectedPhoto) { _ in

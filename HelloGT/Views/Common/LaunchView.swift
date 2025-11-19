@@ -1,6 +1,6 @@
 //
 //  LaunchView.swift
-//  HelloGT
+//  BuzzBuddy
 //
 //  Created by Sanaa Gada on 11/12/25.
 //

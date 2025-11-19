@@ -1,4 +1,4 @@
-# 🐝 HelloGT - Georgia Tech Color Scheme & UI Improvements
+# 🐝 BuzzBuddy - Georgia Tech Color Scheme & UI Improvements
 
 ## 🎨 Georgia Tech Brand Colors Applied
 
@@ -89,7 +89,7 @@
 ## 🔄 Global Theme Application
 
 The theme is applied automatically when the app launches via:
-- `GTTheme.configure()` in `HelloGTApp.swift`
+- `GTTheme.configure()` in `BuzzBuddyApp.swift`
 - Global navigation and tab bar appearances
 - Consistent accent color throughout
 - Automatic dark mode adaptation

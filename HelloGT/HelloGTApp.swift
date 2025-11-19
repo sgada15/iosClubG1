@@ -1,6 +1,6 @@
 //
-//  HelloGTApp.swift
-//  HelloGT
+//  BuzzBuddyApp.swift
+//  BuzzBuddy
 //
 //  Created by Sanaa Gada on 10/30/25.
 //
@@ -10,14 +10,14 @@ import FirebaseFirestore
 import FirebaseAuth
 
 @main
-struct HelloGTApp: App {
+struct BuzzBuddyApp: App {
     @StateObject private var appState = AppState()
     
     init() {
         FirebaseApp.configure()
         GTTheme.configure() // Apply GT theme globally
         print("✅ Firebase configured successfully!")
-        print("🎨 GT Theme applied!")
+        print("🎨 BuzzBuddy Theme applied!")
     }
     
     var body: some Scene {

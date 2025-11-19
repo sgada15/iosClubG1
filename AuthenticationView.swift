@@ -1,6 +1,6 @@
 //
 //  AuthenticationView.swift
-//  HelloGT
+//  BuzzBuddy
 //
 //  Created by Sanaa Gada on 11/16/25.
 //
@@ -76,12 +76,12 @@ struct SignInView: View {
                                 .scaledToFit()
                                 .frame(width: 80, height: 80)
                             
-                            Text("HelloGT")
+                            Text("BuzzBuddy")
                                 .font(.largeTitle)
                                 .bold()
                                 .foregroundColor(.primary)
                             
-                            Text("Welcome back!")
+                            Text("Where the buzz at?")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -206,12 +206,12 @@ struct SignUpView: View {
                                 .scaledToFit()
                                 .frame(width: 80, height: 80)
                             
-                            Text("Join HelloGT")
+                            Text("Join BuzzBuddy")
                                 .font(.largeTitle)
                                 .bold()
                                 .foregroundColor(.primary)
                             
-                            Text("Connect with others!")
+                            Text("Where the buzz at?")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -351,7 +351,7 @@ struct GTButtonStyle: ButtonStyle {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.accentColor)
+                    .fill(Color.gtGold)
                     .opacity(configuration.isPressed ? 0.8 : 1.0)
             )
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
@@ -365,8 +365,12 @@ struct GTTextFieldStyle: TextFieldStyle {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    .fill(Color.gtCardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gtPastelYellow.opacity(0.3), lineWidth: 1)
+                    )
+                    .shadow(color: Color.gtGold.opacity(0.1), radius: 2, x: 0, y: 1)
             )
     }
 }
