@@ -90,7 +90,12 @@ struct FriendsView: View {
             .onAppear {
                 setupManager()
             }
-            .onChange(of: swipeManager.matches) { _ in
+            .onChange(of: swipeManager.matches) { oldValue, newValue in
+                loadMatchedProfiles()
+            }
+            .onChange(of: notificationManager.matchNotifications) { oldValue, newValue in
+                // Reload when a notification is acknowledged (opened)
+                // This will trigger when matchNotifications changes (e.g., when isRead is set to true)
                 loadMatchedProfiles()
             }
             .refreshable {
@@ -108,14 +113,35 @@ struct FriendsView: View {
     
     private func loadMatchedProfiles() {
         isLoading = true
-        let matchedUserIds = swipeManager.getMatchedUserIds()
         
-        print("🔄 Loading matched profiles for user IDs: \(matchedUserIds)")
+        // Only get matches that have been acknowledged (notification opened)
+        let allMatchedUserIds = swipeManager.getMatchedUserIds()
+        let acknowledgedMatchIds = notificationManager.acknowledgedMatchIds
+        
+        // Filter to only include matches that have been acknowledged
+        let acknowledgedMatches = swipeManager.matches.filter { match in
+            notificationManager.isMatchAcknowledged(matchId: match.id)
+        }
+        
+        // Get user IDs from acknowledged matches only
+        guard let currentUserId = authManager.user?.uid else {
+            isLoading = false
+            return
+        }
+        
+        let acknowledgedUserIds = acknowledgedMatches.flatMap { match in
+            [match.user1Id, match.user2Id].filter { $0 != currentUserId }
+        }
+        
+        print("🔄 Loading matched profiles...")
+        print("📊 Total matches: \(allMatchedUserIds.count)")
+        print("✅ Acknowledged matches: \(acknowledgedMatchIds.count)")
+        print("👥 Loading profiles for \(acknowledgedUserIds.count) acknowledged matches")
         
         Task {
             var profiles: [UserProfile] = []
             
-            for userId in matchedUserIds {
+            for userId in acknowledgedUserIds {
                 do {
                     if let profile = try await authManager.loadUserProfile(uid: userId) {
                         profiles.append(profile)
@@ -131,7 +157,7 @@ struct FriendsView: View {
             await MainActor.run {
                 matchedProfiles = profiles
                 isLoading = false
-                print("✅ Loaded \(profiles.count) matched profiles total")
+                print("✅ Loaded \(profiles.count) acknowledged matched profiles total")
             }
         }
     }
