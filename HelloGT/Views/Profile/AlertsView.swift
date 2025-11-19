@@ -2,7 +2,7 @@
 //  AlertsView.swift
 //  BuzzBuddy
 //
-//  Created by Assistant on 11/18/25.
+//  Created by Sanaa on 11/18/25.
 //
 
 import SwiftUI
@@ -17,35 +17,54 @@ struct AlertsView: View {
     
     var body: some View {
         NavigationView {
-            Group {
-                if notificationManager.unreadNotifications.isEmpty {
-                    // Empty State
-                    VStack(spacing: 20) {
-                        Image(systemName: "bell.slash")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
-                        
-                        Text("No New Matches")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
-                        Text("When you match with someone, you'll see the notification here!")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-                    }
-                    .padding()
-                } else {
-                    // Notifications List
-                    List {
-                        ForEach(notificationManager.unreadNotifications) { notification in
-                            NotificationRow(notification: notification) {
-                                handleNotificationTap(notification)
+            ZStack {
+                // GT-themed background
+                LinearGradient.gtBackgroundGradient
+                    .ignoresSafeArea()
+                
+                Group {
+                    if notificationManager.unreadNotifications.isEmpty {
+                        // Empty State with GT styling
+                        VStack(spacing: 24) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.gtPastelYellow.opacity(0.3))
+                                    .frame(width: 120, height: 120)
+                                
+                                Image(systemName: "bell.slash")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gtSecondary)
+                            }
+                            
+                            VStack(spacing: 12) {
+                                Text("No New Matches")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.gtPrimaryText)
+                                
+                                Text("When you match with someone, you'll see the notification here! Keep exploring to find your perfect match.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.gtSecondaryText)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 20)
                             }
                         }
+                        .padding(40)
+                    } else {
+                        // Notifications List with GT styling
+                        List {
+                            ForEach(notificationManager.unreadNotifications) { notification in
+                                NotificationRow(notification: notification) {
+                                    handleNotificationTap(notification)
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .padding(.vertical, 4)
+                            }
+                        }
+                        .listStyle(.plain)
+                        .background(Color.clear)
                     }
-                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Match Alerts")
@@ -67,6 +86,8 @@ struct AlertsView: View {
         }
     }
     
+    // MARK: - Private Methods
+    
     private func handleNotificationTap(_ notification: MatchNotification) {
         // Load the matched user's profile
         Task {
@@ -80,7 +101,9 @@ struct AlertsView: View {
                     }
                 }
             } catch {
-                print("❌ Failed to load matched user profile: \(error)")
+                await MainActor.run {
+                    print("❌ Failed to load matched user profile: \(error)")
+                }
             }
         }
     }
@@ -123,41 +146,57 @@ struct NotificationRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 16) {
-                // Profile Picture Placeholder
+                // Profile Picture Placeholder with GT styling
                 ZStack {
                     Circle()
-                        .fill(Color(.systemGray5))
-                        .frame(width: 50, height: 50)
+                        .fill(Color.gtCardBackground)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.gtPastelYellow.opacity(0.4), lineWidth: 1)
+                        )
+                        .frame(width: 55, height: 55)
                     
                     Image(systemName: "person.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.gray)
+                        .font(.system(size: 32))
+                        .foregroundColor(.gtSecondary)
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("🎉 It's a Match!")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("It's a match!")
                         .font(.headline)
-                        .foregroundColor(.primary)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.gtGold)
                     
                     Text("You matched with \(notification.matchedUserName)")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.gtPrimaryText)
                     
                     Text(formatTimeAgo(notification.createdAt))
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.gtSecondaryText)
                 }
                 
                 Spacer()
                 
-                // Unread indicator
+                // Unread indicator with GT colors
                 if !notification.isRead {
                     Circle()
-                        .fill(Color.accentColor)
-                        .frame(width: 10, height: 10)
+                        .fill(Color.gtBuzzGold)
+                        .frame(width: 12, height: 12)
+                        .shadow(color: .gtBuzzGold.opacity(0.4), radius: 3, x: 0, y: 1)
                 }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gtCardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gtPastelYellow.opacity(0.3), lineWidth: 1)
+                    )
+            )
+            .shadow(color: .gtGold.opacity(0.1), radius: 2, x: 0, y: 1)
         }
         .buttonStyle(.plain)
     }
@@ -189,26 +228,33 @@ struct MatchCelebrationPopup: View {
     
     var body: some View {
         ZStack {
-            Color.black.opacity(0.6)
-                .ignoresSafeArea()
+            // GT-themed background overlay
+            LinearGradient(
+                colors: [Color.gtNavy.opacity(0.8), Color.black.opacity(0.6)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
-            VStack(spacing: 24) {
-                // Title
-                VStack(spacing: 8) {
-                    Text("🎉 It's a Match! 🎉")
+            VStack(spacing: 32) {
+                // Title with GT styling
+                VStack(spacing: 12) {
+                    Text("It's a match!")
                         .font(.title)
                         .fontWeight(.bold)
+                        .foregroundColor(.gtGold)
                         .multilineTextAlignment(.center)
                     
                     Text("You and \(matchedUser.name) both want to connect!")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.gtPrimaryText)
                         .multilineTextAlignment(.center)
+                        .padding(.horizontal, 8)
                 }
                 
-                // Profile Pictures
-                HStack(spacing: 30) {
-                    VStack {
+                // Profile Pictures with GT styling
+                HStack(spacing: 40) {
+                    VStack(spacing: 8) {
                         AsyncImage(url: URL(string: currentUser.profilePhotoURL ?? "")) { image in
                             image
                                 .resizable()
@@ -217,21 +263,36 @@ struct MatchCelebrationPopup: View {
                             Image(systemName: "person.circle.fill")
                                 .resizable()
                                 .scaledToFill()
+                                .foregroundColor(.gtSecondary)
                         }
-                        .frame(width: 80, height: 80)
+                        .frame(width: 90, height: 90)
                         .clipShape(Circle())
-                        .foregroundColor(.gray)
+                        .overlay(
+                            Circle()
+                                .stroke(LinearGradient.gtGoldGradient, lineWidth: 3)
+                        )
+                        .shadow(color: .gtGold.opacity(0.3), radius: 8, x: 0, y: 4)
                         
                         Text("You")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gtSecondaryText)
                     }
                     
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.pink)
+                    // Heart with GT colors
+                    ZStack {
+                        Circle()
+                            .fill(Color.gtBuzzGold.opacity(0.2))
+                            .frame(width: 50, height: 50)
+                        
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gtBuzzGold)
+                    }
+                    .scaleEffect(1.2)
+                    .shadow(color: .gtBuzzGold.opacity(0.4), radius: 6, x: 0, y: 3)
                     
-                    VStack {
+                    VStack(spacing: 8) {
                         AsyncImage(url: URL(string: matchedUser.profilePhotoURL ?? "")) { image in
                             image
                                 .resizable()
@@ -240,37 +301,56 @@ struct MatchCelebrationPopup: View {
                             Image(systemName: "person.circle.fill")
                                 .resizable()
                                 .scaledToFill()
+                                .foregroundColor(.gtSecondary)
                         }
-                        .frame(width: 80, height: 80)
+                        .frame(width: 90, height: 90)
                         .clipShape(Circle())
-                        .foregroundColor(.gray)
+                        .overlay(
+                            Circle()
+                                .stroke(LinearGradient.gtGoldGradient, lineWidth: 3)
+                        )
+                        .shadow(color: .gtGold.opacity(0.3), radius: 8, x: 0, y: 4)
                         
                         Text(matchedUser.name)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gtSecondaryText)
+                            .lineLimit(1)
                     }
                 }
                 
-                // Action Buttons
-                VStack(spacing: 12) {
+                // Action Buttons with GT styling
+                VStack(spacing: 16) {
                     Button("Send Message") {
                         // TODO: Open chat/message functionality
                         onDismiss()
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.gtPrimary)
                     .frame(maxWidth: .infinity)
                     
                     Button("Keep Exploring") {
                         onDismiss()
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.gtSecondary)
                     .frame(maxWidth: .infinity)
                 }
+                .padding(.horizontal, 8)
             }
-            .padding(24)
-            .background(.regularMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .padding(.horizontal, 40)
+            .padding(32)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.regularMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .fill(LinearGradient.gtCardGradient)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.gtPastelYellow.opacity(0.4), lineWidth: 1)
+                    )
+                    .shadow(color: .gtGold.opacity(0.2), radius: 20, x: 0, y: 10)
+            )
+            .padding(.horizontal, 32)
         }
     }
 }
