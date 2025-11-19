@@ -44,7 +44,7 @@ struct MainTabView: View {
 
                     SavedProfilesView()
                         .tabItem {
-                            Label("Saved", systemImage: "bookmark")
+                            Label("Saved", systemImage: "bookmark.fill")
                         }
                         .environmentObject(authManager)
                         .environmentObject(savedProfilesManager)
@@ -52,10 +52,10 @@ struct MainTabView: View {
                     FriendsView()
                         .tabItem {
                             if notificationManager.unreadCount > 0 {
-                                Label("Friends", systemImage: "person.2")
+                                Label("Friends", systemImage: "person.2.fill")
                                     .badge(notificationManager.unreadCount)
                             } else {
-                                Label("Friends", systemImage: "person.2")
+                                Label("Friends", systemImage: "person.2.fill")
                             }
                         }
                         .environmentObject(authManager)
@@ -63,11 +63,11 @@ struct MainTabView: View {
 
                     MyProfileView()
                         .tabItem {
-                            Label("My Profile", systemImage: "person.crop.circle")
+                            Label("Profile", systemImage: "person.crop.circle.fill")
                         }
                         .environmentObject(authManager)
                 }
-                .tint(.accentColor)
+                .gtTabBarStyle()
                 .onAppear {
                     setupNotificationManager()
                 }

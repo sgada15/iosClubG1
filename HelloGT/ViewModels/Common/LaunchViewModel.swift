@@ -12,7 +12,7 @@ class LaunchViewModel: ObservableObject {
     @Published var shouldNavigate = false
 
     func startLaunchSequence() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
             self.shouldNavigate = true
         }
     }

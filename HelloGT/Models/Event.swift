@@ -15,11 +15,10 @@ struct Event: Identifiable, Hashable, Codable {
     let endDate: Date
     let location: String
     let description: String
-    let categories: [String]
     let iconSystemName: String?
     
     // Custom initializer to generate consistent IDs
-    init(id: String? = nil, title: String, startDate: Date, endDate: Date, location: String, description: String, categories: [String], iconSystemName: String?) {
+    init(id: String? = nil, title: String, startDate: Date, endDate: Date, location: String, description: String, iconSystemName: String?) {
         if let id = id {
             self.id = id
         } else {
@@ -35,7 +34,6 @@ struct Event: Identifiable, Hashable, Codable {
         self.endDate = endDate
         self.location = location
         self.description = description
-        self.categories = categories
         self.iconSystemName = iconSystemName
     }
     
@@ -102,7 +100,6 @@ Arts Plaza
 """
 Celebrate culture and creativity at the ImagiNATION Festival with a vibrant Salsa Dance Workshop hosted by the GT Salsa Club! Join us on Wednesday, November 12 from 1:00–1:45 PM in the Arts Plaza for an exciting and beginner-friendly session!
 """,
-            categories: ["Art & Entertainment"],
             iconSystemName: "figure.socialdance"
         )
         
@@ -130,7 +127,6 @@ This event is open to all students, faculty, and staff, with space for up to 50 
 
 All participants will receive a free shirt!
 """,
-            categories: ["Arts & Entertainment", "Health & Wellness"],
             iconSystemName: "paintpalette"
         )
         
@@ -140,7 +136,6 @@ All participants will receive a free shirt!
             endDate: nyDate(hour: 18, minute: 30),
             location: "IC 205",
             description: "This is our final week before finals where we hold a study session for all our members.",
-            categories: [],
             iconSystemName: "books.vertical"
         )
         
@@ -161,7 +156,6 @@ North Avenue Review is Georgia Tech's Open-Forum Magazine! We publish semesterly
 
 We also host events where we collage, watch movies, and craft so look out on our insta (@northavereview) or Engage page for those!
 """,
-            categories: [],
             iconSystemName: "newspaper"
         )
         

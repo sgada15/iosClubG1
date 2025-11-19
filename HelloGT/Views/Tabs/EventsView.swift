@@ -10,6 +10,7 @@ import SwiftUI
 struct EventsView: View {
     private let events = Event.sampleEvents
     @StateObject private var attendanceManager = EventAttendanceManager()
+    @EnvironmentObject var authManager: AuthenticationManager
     
     var body: some View {
         NavigationStack {
@@ -19,6 +20,7 @@ struct EventsView: View {
                         NavigationLink(value: event) {
                             EventCardView(event: event)
                                 .environmentObject(attendanceManager)
+                                .environmentObject(authManager)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -30,6 +32,7 @@ struct EventsView: View {
             .navigationDestination(for: Event.self) { event in
                 EventDetailView(event: event)
                     .environmentObject(attendanceManager)
+                    .environmentObject(authManager)
             }
             .onAppear {
                 attendanceManager.startListeningToAttendance()
