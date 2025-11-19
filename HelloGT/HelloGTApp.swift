@@ -15,7 +15,9 @@ struct HelloGTApp: App {
     
     init() {
         FirebaseApp.configure()
+        GTTheme.configure() // Apply GT theme globally
         print("✅ Firebase configured successfully!")
+        print("🎨 GT Theme applied!")
     }
     
     var body: some Scene {

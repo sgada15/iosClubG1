@@ -31,25 +31,20 @@ struct LaunchView: View {
                     .opacity(showBee && !fadeOut ? 1 : 0)
                     .animation(.easeOut(duration: 1.2), value: showBee)
 
-                // Animated "HelloGT"
-                HelloGTAnimatedText()
+                // Animated "BuzzBuddy"
+                BuzzBuddyAnimatedText()
                     .frame(height: 120)
                     .opacity(showSlogan && !fadeOut ? 1 : 0)
                     .scaleEffect(showSlogan ? 1.0 : 0.95)
                     .animation(.easeInOut(duration: 0.6).delay(0.5), value: showSlogan)
 
-                // Slogan
-                Text("MEET THE BUZZ")
+                // Tagline
+                Text("Where the buzz at?")
                     .font(.headline)
+                    .italic()
                     .foregroundColor(.gray)
                     .opacity(showSlogan && !fadeOut ? 1 : 0)
                     .animation(.easeIn(duration: 2.0).delay(1.0), value: showSlogan)
-                
-                Text("The social app for every Yellow Jacket.")
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                    .opacity(showSlogan && !fadeOut ? 1 : 0)
-                    .animation(.easeIn(duration: 2.0).delay(1.3), value: showSlogan)
             }
             .padding()
             .opacity(fadeOut ? 0 : 1)
@@ -80,11 +75,11 @@ struct LaunchView: View {
     }
 }
 
-struct HelloGTAnimatedText: View {
+struct BuzzBuddyAnimatedText: View {
     @State private var drawAmount: CGFloat = 0
 
     var body: some View {
-        HelloGTShape()
+        BuzzBuddyShape()
             .trim(from: 0, to: drawAmount)
             .stroke(
                 LinearGradient(colors: [.yellow, .orange],
@@ -101,9 +96,9 @@ struct HelloGTAnimatedText: View {
     }
 }
 
-struct HelloGTShape: Shape {
+struct BuzzBuddyShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let text = "HelloGT"
+        let text = "BuzzBuddy"
         let font = UIFont(name: "SnellRoundhand-Bold", size: 70) ?? UIFont.systemFont(ofSize: 70)
         
         let attributedString = NSAttributedString(string: text, attributes: [.font: font])

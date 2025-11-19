@@ -45,29 +45,8 @@ struct EditProfileView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
+        NavigationView {
             VStack(spacing: 0) {
-                // Navigation Bar
-                HStack {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(.accentColor)
-                    
-                    Spacer()
-                    
-                    Text("Edit Profile")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                    
-                    // Invisible placeholder for symmetry
-                    Text("Cancel")
-                        .foregroundColor(.clear)
-                }
-                .padding()
-                
                 // Scrollable Form Content
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
@@ -302,12 +281,9 @@ struct EditProfileView: View {
                                 }
                             }
                         }
-                        
-                        // Bottom padding to account for fixed save button
-                        Spacer()
-                            .frame(height: 80)
                     }
                     .padding(.horizontal)
+                    .padding(.bottom, 100) // Space for save button
                 }
                 
                 // Fixed Save Button at Bottom
@@ -333,6 +309,15 @@ struct EditProfileView: View {
                     .disabled(!isFormValid || isSaving)
                     .padding()
                     .background(Color(.systemBackground))
+                }
+            }
+            .navigationTitle("Edit Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
                 }
             }
         }
