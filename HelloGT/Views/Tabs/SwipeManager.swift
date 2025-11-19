@@ -19,6 +19,9 @@ class SwipeManager: ObservableObject {
     private var currentUserId: String = ""
     private var userSwipeData = UserSwipeData()
     
+    // Reference to notification manager
+    weak var notificationManager: NotificationManager?
+    
     init() {
         // Will be set when user logs in
     }
@@ -27,6 +30,10 @@ class SwipeManager: ObservableObject {
         self.currentUserId = userId
         loadUserSwipeData()
         loadMatches()
+    }
+    
+    func setNotificationManager(_ manager: NotificationManager) {
+        self.notificationManager = manager
     }
     
     // MARK: - Swipe Actions
@@ -54,14 +61,17 @@ class SwipeManager: ObservableObject {
             let match = Match(user1Id: currentUserId, user2Id: targetUser.id)
             try? await createMatch(match)
             
-            // Show match popup
+            // Add to notification system instead of showing popup immediately
             await MainActor.run {
-                newMatch = (currentUser, targetUser)
-                showMatchPopup = true
                 matches.append(match)
+                notificationManager?.addMatchNotification(
+                    match: match,
+                    currentUserId: currentUserId,
+                    matchedUserName: targetUser.name
+                )
             }
             
-            print("🎉 MATCH with \(targetUser.name)!")
+            print("🎉 MATCH with \(targetUser.name)! Added to notifications.")
         } else {
             print("💚 Swiped right on \(targetUser.name) - waiting for their swipe")
         }

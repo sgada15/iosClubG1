@@ -11,8 +11,10 @@ import FirebaseAuth
 
 struct ExploreView: View {
     @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var notificationManager: NotificationManager
     @StateObject private var savedProfilesManager = SavedProfilesManager()
     @StateObject private var swipeManager = SwipeManager()
+    @State private var cardStack: [UserProfile] = []
     @State private var currentProfileIndex = 0
     @State private var dragOffset = CGSize.zero
     @State private var isShowingDetailView = false
@@ -66,40 +68,57 @@ struct ExploreView: View {
                     }
                     .padding()
                 } else {
-                    // Main Content
+                    // Card Stack
                     VStack {
-                        if currentProfileIndex < exploreProfiles.count {
-                            ProfileCard(
-                                profile: exploreProfiles[currentProfileIndex],
-                                dragOffset: dragOffset,
-                                savedProfilesManager: savedProfilesManager,
-                                swipeOverlay: swipeOverlay,
-                                onTap: { isShowingDetailView = true }
-                            )
-                            .offset(dragOffset)
-                            .rotationEffect(.degrees(cardRotation))
-                            .scaleEffect(cardScale)
-                            .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { gesture in
-                                        dragOffset = gesture.translation
-                                        
-                                        // Visual feedback while dragging
-                                        cardRotation = Double(dragOffset.width / 20)
-                                        cardScale = 1.0 - abs(dragOffset.width) / 2000
-                                        
-                                        // Show overlay based on drag direction
-                                        if abs(dragOffset.width) > 50 {
-                                            swipeOverlay = dragOffset.width > 0 ? .like : .pass
-                                        } else {
-                                            swipeOverlay = nil
+                        if !cardStack.isEmpty {
+                            ZStack {
+                                // Show stable 3-card stack
+                                ForEach(Array(cardStack.prefix(3).enumerated()), id: \.element.id) { index, profile in
+                                    // Use first card's ID instead of index to determine top card
+                                    let isTopCard = !cardStack.isEmpty && profile.id == cardStack[0].id
+                                    
+                                    ProfileCard(
+                                        profile: profile,
+                                        dragOffset: isTopCard ? dragOffset : .zero,
+                                        savedProfilesManager: savedProfilesManager,
+                                        swipeOverlay: isTopCard ? swipeOverlay : nil,
+                                        onTap: { 
+                                            if isTopCard {
+                                                isShowingDetailView = true 
+                                            }
                                         }
-                                    }
-                                    .onEnded { gesture in
-                                        handleSwipeGesture(gesture)
-                                    }
-                            )
-                            .animation(.easeOut, value: dragOffset)
+                                    )
+                                    .scaleEffect(isTopCard ? cardScale : (1.0 - CGFloat(index) * 0.05))
+                                    .offset(
+                                        x: isTopCard ? dragOffset.width : 0,
+                                        y: isTopCard ? dragOffset.height : CGFloat(index) * -20
+                                    )
+                                    .rotationEffect(.degrees(isTopCard ? cardRotation : 0))
+                                    .zIndex(Double(3 - index))
+                                    .gesture(
+                                        isTopCard ? 
+                                        DragGesture(minimumDistance: 0)
+                                            .onChanged { gesture in
+                                                dragOffset = gesture.translation
+                                                
+                                                // Visual feedback while dragging
+                                                cardRotation = Double(dragOffset.width / 20)
+                                                cardScale = 1.0 - abs(dragOffset.width) / 2000
+                                                
+                                                // Show overlay based on drag direction
+                                                if abs(dragOffset.width) > 50 {
+                                                    swipeOverlay = dragOffset.width > 0 ? .like : .pass
+                                                } else {
+                                                    swipeOverlay = nil
+                                                }
+                                            }
+                                            .onEnded { gesture in
+                                                handleSwipeGesture(gesture)
+                                            }
+                                        : nil
+                                    )
+                                }
+                            }
                             
                             Spacer()
                             
@@ -138,16 +157,7 @@ struct ExploreView: View {
                     }
                 }
                 
-                // Match Success Popup
-                if swipeManager.showMatchPopup, let match = swipeManager.newMatch {
-                    MatchPopup(
-                        currentUser: match.0,
-                        matchedUser: match.1,
-                        onDismiss: {
-                            swipeManager.dismissMatchPopup()
-                        }
-                    )
-                }
+                // Removed Match Success Popup - now handled by AlertsView
             }
             .navigationTitle("Explore")
             .navigationBarTitleDisplayMode(.inline)
@@ -176,41 +186,66 @@ struct ExploreView: View {
             return 
         }
         swipeManager.setCurrentUser(userId: user.uid)
+        swipeManager.setNotificationManager(notificationManager)
     }
     
     private func handleSwipeGesture(_ gesture: DragGesture.Value) {
         let swipeThreshold: CGFloat = 200
         let dragDistance = sqrt(pow(gesture.translation.width, 2) + pow(gesture.translation.height, 2))
         
+        print("🔍 DEBUG: handleSwipeGesture called")
+        print("📊 cardStack.count: \(cardStack.count)")
+        print("📊 currentProfileIndex: \(currentProfileIndex)")
+        print("📊 exploreProfiles.count: \(exploreProfiles.count)")
+        
         if dragDistance < 10 {
             // This was a tap, not a drag
-            isShowingDetailView = true
+            if !cardStack.isEmpty {
+                print("👆 DEBUG: Tap detected")
+                isShowingDetailView = true
+            }
             resetCard()
         } else if abs(gesture.translation.width) > swipeThreshold {
             // Swipe threshold reached
-            let currentProfile = exploreProfiles[currentProfileIndex]
-            
-            if gesture.translation.width > 0 {
-                // Swipe Right - Like
-                handleSwipeRight(currentProfile)
+            if !cardStack.isEmpty {
+                let currentProfile = cardStack[0]
+                print("📱 DEBUG: Swiping profile: \(currentProfile.name)")
+                
+                if gesture.translation.width > 0 {
+                    // Swipe Right - Like
+                    print("💚 DEBUG: Swipe RIGHT")
+                    handleSwipeRight(currentProfile)
+                } else {
+                    // Swipe Left - Pass
+                    print("👎 DEBUG: Swipe LEFT")
+                    handleSwipeLeft(currentProfile)
+                }
+                
+                // Animate card flying off and immediately move to next
+                let direction: CGFloat = gesture.translation.width > 0 ? 1 : -1
+                withAnimation(.easeOut(duration: 0.25)) {
+                    dragOffset = CGSize(width: direction * 1000, height: gesture.translation.height)
+                    cardRotation = Double(direction * 30)
+                }
+                
+                // Reset drag values and move to next profile after animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    print("🔄 DEBUG: About to reset and move to next")
+                    // Reset FIRST to prevent new card from inheriting old values
+                    dragOffset = .zero
+                    cardRotation = 0
+                    cardScale = 1.0
+                    swipeOverlay = nil
+                    
+                    // THEN move to next profile (smooth slide up)
+                    moveToNextProfileClean()
+                }
             } else {
-                // Swipe Left - Pass
-                handleSwipeLeft(currentProfile)
-            }
-            
-            // Animate card flying off
-            let direction: CGFloat = gesture.translation.width > 0 ? 1 : -1
-            withAnimation(.easeOut(duration: 0.3)) {
-                dragOffset = CGSize(width: direction * 1000, height: gesture.translation.height)
-                cardRotation = Double(direction * 30)
-            }
-            
-            // Brief pause to show overlay, then move to next
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                moveToNextProfile()
+                print("⚠️ DEBUG: cardStack is empty, cannot swipe")
             }
         } else {
             // Return to center
+            print("🔙 DEBUG: Return to center")
             resetCard()
         }
     }
@@ -261,8 +296,75 @@ struct ExploreView: View {
     }
     
     private func moveToNextProfile() {
-        currentProfileIndex += 1
-        resetCard()
+        // Remove the top card and add a new one from the remaining profiles
+        if !cardStack.isEmpty {
+            withAnimation(.easeOut(duration: 0.3)) {
+                cardStack.removeFirst()
+                
+                // Add a new card from remaining profiles if available
+                if currentProfileIndex < exploreProfiles.count {
+                    if cardStack.count < 3 {
+                        let newIndex = currentProfileIndex + cardStack.count
+                        if newIndex < exploreProfiles.count {
+                            cardStack.append(exploreProfiles[newIndex])
+                        }
+                    }
+                    currentProfileIndex += 1
+                }
+            }
+        }
+        
+        // Reset card state without animation conflicts
+        dragOffset = .zero
+        cardRotation = 0
+        cardScale = 1.0
+        swipeOverlay = nil
+    }
+    
+    private func moveToNextProfileClean() {
+        print("🔄 DEBUG: moveToNextProfileClean called")
+        print("📊 BEFORE - cardStack.count: \(cardStack.count)")
+        print("📊 BEFORE - currentProfileIndex: \(currentProfileIndex)")
+        print("📊 BEFORE - exploreProfiles.count: \(exploreProfiles.count)")
+        
+        // Clean transition without inheriting old drag values
+        if !cardStack.isEmpty {
+            print("🗑️ DEBUG: Removing first card: \(cardStack[0].name)")
+            
+            withAnimation(.easeOut(duration: 0.3)) {
+                cardStack.removeFirst()
+                print("📊 AFTER removeFirst - cardStack.count: \(cardStack.count)")
+                
+                // Add a new card from remaining profiles if available
+                if currentProfileIndex < exploreProfiles.count {
+                    if cardStack.count < 3 {
+                        let newIndex = currentProfileIndex + cardStack.count
+                        print("🔢 DEBUG: Trying to add card at index: \(newIndex)")
+                        print("📊 exploreProfiles.count: \(exploreProfiles.count)")
+                        
+                        if newIndex < exploreProfiles.count {
+                            let newProfile = exploreProfiles[newIndex]
+                            cardStack.append(newProfile)
+                            print("✅ DEBUG: Added new card: \(newProfile.name)")
+                        } else {
+                            print("⚠️ DEBUG: newIndex (\(newIndex)) >= exploreProfiles.count (\(exploreProfiles.count))")
+                        }
+                    } else {
+                        print("📊 DEBUG: cardStack already has 3 cards, not adding")
+                    }
+                    currentProfileIndex += 1
+                    print("📊 DEBUG: Updated currentProfileIndex to: \(currentProfileIndex)")
+                } else {
+                    print("⚠️ DEBUG: currentProfileIndex (\(currentProfileIndex)) >= exploreProfiles.count (\(exploreProfiles.count))")
+                }
+            }
+        } else {
+            print("⚠️ DEBUG: cardStack is empty in moveToNextProfileClean")
+        }
+        
+        print("📊 FINAL - cardStack.count: \(cardStack.count)")
+        print("📊 FINAL - currentProfileIndex: \(currentProfileIndex)")
+        print("🏁 DEBUG: moveToNextProfileClean finished")
     }
     
     private func loadExploreProfiles() {
@@ -282,6 +384,9 @@ struct ExploreView: View {
                 await MainActor.run {
                     // Filter out users we've already swiped on
                     exploreProfiles = users.filter { swipeManager.shouldShowUser($0) }
+                    
+                    // Initialize card stack with first 3 profiles
+                    cardStack = Array(exploreProfiles.prefix(3))
                     currentProfileIndex = 0
                     isLoading = false
                     
@@ -289,6 +394,7 @@ struct ExploreView: View {
                         print("📭 No new users found for explore feed")
                     } else {
                         print("📱 Loaded \(exploreProfiles.count) new users for explore feed")
+                        print("🃏 Card stack initialized with \(cardStack.count) cards")
                     }
                 }
             } catch {
@@ -311,93 +417,112 @@ struct ProfileCard: View {
     
     var body: some View {
         ZStack {
-            VStack(alignment: .leading, spacing: 16) {
-                // Profile picture and save button
+            // Main Content - Instagram Style
+            VStack(spacing: 20) {
+                // Save Button (top right corner)
                 HStack {
                     Spacer()
-                    
-                    VStack(spacing: 12) {
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 120, height: 120)
-                            .clipShape(Circle())
-                            .foregroundColor(.gray)
-                            .shadow(radius: 8)
-                        
-                        VStack(spacing: 4) {
-                            Text(profile.name)
-                                .font(.title2)
-                                .bold()
-                                .foregroundColor(.primary)
-                            
-                            Text("\(profile.major) • \(profile.year)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                    Button(action: {
+                        if savedProfilesManager.isProfileSaved(profile) {
+                            savedProfilesManager.unsaveProfile(profile)
+                        } else {
+                            savedProfilesManager.saveProfile(profile)
                         }
+                    }) {
+                        Image(systemName: savedProfilesManager.isProfileSaved(profile) ? "bookmark.fill" : "bookmark")
+                            .font(.title2)
+                            .foregroundColor(savedProfilesManager.isProfileSaved(profile) ? .accentColor : .secondary)
+                            .padding(12)
+                            .background(Circle().fill(Color(.systemGray6)))
+                            .shadow(radius: 2)
                     }
-                    
-                    Spacer()
-                    
-                    VStack {
-                        Button(action: {
-                            if savedProfilesManager.isProfileSaved(profile) {
-                                savedProfilesManager.unsaveProfile(profile)
-                            } else {
-                                savedProfilesManager.saveProfile(profile)
-                            }
-                        }) {
-                            Image(systemName: savedProfilesManager.isProfileSaved(profile) ? "bookmark.fill" : "bookmark")
-                                .font(.title2)
-                                .foregroundColor(savedProfilesManager.isProfileSaved(profile) ? .accentColor : .secondary)
-                                .padding(12)
-                                .background(Circle().fill(Color(.systemGray6)))
-                                .shadow(radius: 2)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Spacer()
-                    }
-                    .padding(.top, 8)
+                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
                 
-                // About section
-                if !profile.bio.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("About")
-                            .font(.headline)
+                // Profile Content (Center-aligned Instagram style)
+                VStack(spacing: 16) {
+                    // Profile Photo
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                        .foregroundColor(.gray)
+                        .shadow(radius: 8)
+                    
+                    // Name and Major (Center-aligned)
+                    VStack(spacing: 6) {
+                        Text(profile.name)
+                            .font(.title2)
+                            .fontWeight(.bold)
                             .foregroundColor(.primary)
+                            .multilineTextAlignment(.center)
                         
-                        Text(profile.bio)
+                        Text(profile.major)
                             .font(.body)
                             .foregroundColor(.secondary)
-                            .lineLimit(4)
+                            .multilineTextAlignment(.center)
                     }
-                }
-                
-                // Quick interests preview
-                if !profile.interests.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Interests")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        
-                        Text(profile.interests.prefix(3).joined(separator: " • "))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                        
-                        if profile.interests.count > 3 {
-                            Text("and \(profile.interests.count - 3) more...")
-                                .font(.caption)
+                    
+                    // Personality Quote with Label (Instagram caption style)
+                    if !profile.personalityAnswers.isEmpty && !profile.personalityAnswers[0].isEmpty {
+                        HStack {
+                            Text("Free time:")
+                                .font(.body)
+                                .fontWeight(.medium)
                                 .foregroundColor(.secondary)
+                            
+                            Text("\"\(profile.personalityAnswers[0])\"")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
                         }
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                    }
+                    
+                    // Interests with Label
+                    if !profile.interests.isEmpty {
+                        HStack {
+                            Text("Interests:")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            
+                            let displayInterests = Array(profile.interests.prefix(3))
+                            Text(displayInterests.joined(separator: " • "))
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                    }
+                    
+                    // Clubs with Label
+                    if !profile.clubs.isEmpty {
+                        HStack {
+                            Text("Clubs:")
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            
+                            let displayClubs = Array(profile.clubs.prefix(2))
+                            Text(displayClubs.joined(separator: " • "))
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
                     }
                 }
+                .padding(.horizontal, 24)
                 
                 Spacer()
             }
-            .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(.thinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -423,86 +548,5 @@ struct ProfileCard: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 40)
-    }
-}
-
-struct MatchPopup: View {
-    let currentUser: UserProfile
-    let matchedUser: UserProfile
-    let onDismiss: () -> Void
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.6)
-                .ignoresSafeArea()
-            
-            VStack(spacing: 24) {
-                // Title
-                VStack(spacing: 8) {
-                    Text("🎉 It's a Match! 🎉")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("You and \(matchedUser.name) both want to connect!")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                
-                // Profile Pictures
-                HStack(spacing: 30) {
-                    VStack {
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(Circle())
-                            .foregroundColor(.gray)
-                        
-                        Text("You")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.pink)
-                    
-                    VStack {
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 80, height: 80)
-                            .clipShape(Circle())
-                            .foregroundColor(.gray)
-                        
-                        Text(matchedUser.name)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Action Buttons
-                VStack(spacing: 12) {
-                    Button("Send Message") {
-                        // TODO: Open chat/message functionality
-                        onDismiss()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("Keep Exploring") {
-                        onDismiss()
-                    }
-                    .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(24)
-            .background(.regularMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .padding(.horizontal, 40)
-        }
     }
 }

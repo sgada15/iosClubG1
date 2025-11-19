@@ -27,47 +27,53 @@ struct MyProfileView: View {
     
     @State private var showEditProfile = false
     @State private var showSignOutAlert = false
+    @State private var isLoading = true
     
     var body: some View {
         NavigationView {
-            OtherProfileDetailView(
-                profile: currentUserProfile,
-                isCurrentUser: true,
-                onEdit: {
-                    showEditProfile = true
-                }
-            )
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("Edit Profile") {
-                            showEditProfile = true
+            if isLoading {
+                ProgressView("Loading profile...")
+            } else {
+                OtherProfileDetailView(
+                    profile: currentUserProfile,
+                    isCurrentUser: true,
+                    onEdit: {
+                        showEditProfile = true
+                    }
+                )
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button("Edit Profile") {
+                                showEditProfile = true
+                            }
+                            
+                            Divider()
+                            
+                            Button("Sign Out", role: .destructive) {
+                                showSignOutAlert = true
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
-                        
-                        Divider()
-                        
-                        Button("Sign Out", role: .destructive) {
-                            showSignOutAlert = true
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
                 }
-            }
-            .sheet(isPresented: $showEditProfile) {
-                NavigationView {
-                    EditProfileView(profile: $currentUserProfile)
-                        .navigationTitle("Edit Profile")
-                        .navigationBarTitleDisplayMode(.inline)
+                .sheet(isPresented: $showEditProfile) {
+                    NavigationView {
+                        EditProfileView(profile: $currentUserProfile)
+                            .environmentObject(authManager)
+                            .navigationTitle("Edit Profile")
+                            .navigationBarTitleDisplayMode(.inline)
+                    }
                 }
-            }
-            .alert("Sign Out", isPresented: $showSignOutAlert) {
-                Button("Sign Out", role: .destructive) {
-                    authManager.signOut()
+                .alert("Sign Out", isPresented: $showSignOutAlert) {
+                    Button("Sign Out", role: .destructive) {
+                        authManager.signOut()
+                    }
+                    Button("Cancel", role: .cancel) { }
+                } message: {
+                    Text("Are you sure you want to sign out?")
                 }
-                Button("Cancel", role: .cancel) { }
-            } message: {
-                Text("Are you sure you want to sign out?")
             }
         }
         .onAppear {
@@ -76,6 +82,8 @@ struct MyProfileView: View {
     }
     
     private func loadCurrentUserProfile() {
+        isLoading = true
+        
         // Update profile with current user info from auth
         if let user = authManager.user {
             // Load profile from Firebase
@@ -84,6 +92,7 @@ struct MyProfileView: View {
                     if let loadedProfile = try await authManager.getCurrentUserProfile() {
                         await MainActor.run {
                             currentUserProfile = loadedProfile
+                            isLoading = false
                         }
                     } else {
                         // No profile exists, update with user auth info
@@ -92,6 +101,7 @@ struct MyProfileView: View {
                             if let displayName = user.displayName, !displayName.isEmpty {
                                 currentUserProfile.name = displayName
                             }
+                            isLoading = false
                         }
                     }
                 } catch {
@@ -102,9 +112,12 @@ struct MyProfileView: View {
                         if let displayName = user.displayName, !displayName.isEmpty {
                             currentUserProfile.name = displayName
                         }
+                        isLoading = false
                     }
                 }
             }
+        } else {
+            isLoading = false
         }
     }
 }

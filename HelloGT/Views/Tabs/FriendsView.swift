@@ -11,9 +11,11 @@ import Combine
 
 struct FriendsView: View {
     @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var notificationManager: NotificationManager
     @StateObject private var swipeManager = SwipeManager()
     @State private var matchedProfiles: [UserProfile] = []
     @State private var isLoading = true
+    @State private var showAlerts = false
     
     var body: some View {
         NavigationView {
@@ -42,9 +44,9 @@ struct FriendsView: View {
                     // Matches List
                     ScrollView {
                         LazyVGrid(columns: [
-                            GridItem(.flexible(), spacing: 16),
-                            GridItem(.flexible(), spacing: 16)
-                        ], spacing: 16) {
+                            GridItem(.flexible(), spacing: 20),
+                            GridItem(.flexible(), spacing: 20)
+                        ], spacing: 20) {
                             ForEach(matchedProfiles, id: \.id) { profile in
                                 NavigationLink {
                                     OtherProfileDetailView(profile: profile, isCurrentUser: false)
@@ -54,16 +56,44 @@ struct FriendsView: View {
                                 .buttonStyle(.plain)
                             }
                         }
-                        .padding(.horizontal)
-                        .padding(.top)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
                     }
                 }
             }
             .navigationTitle("Friends")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showAlerts = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "bell")
+                            if notificationManager.unreadCount > 0 {
+                                Text("\(notificationManager.unreadCount)")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.red)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+            }
+            .sheet(isPresented: $showAlerts) {
+                AlertsView()
+                    .environmentObject(authManager)
+                    .environmentObject(notificationManager)
+            }
             .onAppear {
                 setupManager()
             }
             .onChange(of: swipeManager.matches) { _ in
+                loadMatchedProfiles()
+            }
+            .refreshable {
                 loadMatchedProfiles()
             }
         }
@@ -80,6 +110,8 @@ struct FriendsView: View {
         isLoading = true
         let matchedUserIds = swipeManager.getMatchedUserIds()
         
+        print("🔄 Loading matched profiles for user IDs: \(matchedUserIds)")
+        
         Task {
             var profiles: [UserProfile] = []
             
@@ -87,6 +119,9 @@ struct FriendsView: View {
                 do {
                     if let profile = try await authManager.loadUserProfile(uid: userId) {
                         profiles.append(profile)
+                        print("✅ Loaded profile: \(profile.name) - Major: '\(profile.major)' Year: '\(profile.year)'")
+                    } else {
+                        print("⚠️ No profile found for user ID: \(userId)")
                     }
                 } catch {
                     print("❌ Failed to load profile for user \(userId): \(error)")
@@ -96,7 +131,7 @@ struct FriendsView: View {
             await MainActor.run {
                 matchedProfiles = profiles
                 isLoading = false
-                print("✅ Loaded \(profiles.count) matched profiles")
+                print("✅ Loaded \(profiles.count) matched profiles total")
             }
         }
     }
@@ -106,44 +141,49 @@ struct MatchCard: View {
     let profile: UserProfile
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
+            // Bigger profile image
             Image(systemName: "person.circle.fill")
                 .resizable()
                 .scaledToFill()
-                .frame(width: 80, height: 80)
+                .frame(width: 100, height: 100)
                 .clipShape(Circle())
                 .foregroundColor(.gray)
             
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Text(profile.name)
-                    .font(.headline)
+                    .font(.title3)
+                    .fontWeight(.semibold)
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
-                if !profile.major.isEmpty {
-                    Text(profile.major)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
+                // Always reserve space for major (but show empty if not available)
+                Text(profile.major)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .frame(minHeight: 20) // Reserve space even if empty
                 
-                if !profile.year.isEmpty {
-                    Text("Class of \(profile.year)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                // Always reserve space for year (but show empty if not available)
+                Text(profile.year.isEmpty ? "" : "Class of \(profile.year)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(minHeight: 16) // Reserve space even if empty
             }
+            .frame(height: 70) // Fixed height for text area
             
             Button("Message") {
                 // TODO: Open chat functionality
                 print("Opening chat with \(profile.name)")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
         }
-        .padding()
+        .frame(minHeight: 220) // Taller minimum height
+        .frame(maxWidth: .infinity) // Take full width available
+        .padding(20) // More generous padding
         .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 }
