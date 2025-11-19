@@ -19,8 +19,13 @@ struct ExploreView: View {
     @State private var dragOffset = CGSize.zero
     @State private var isShowingDetailView = false
     @State private var exploreProfiles: [UserProfile] = []
+    @State private var allProfiles: [UserProfile] = [] // Store all profiles for filtering
     @State private var isLoading = true
     @State private var loadError: String?
+    @State private var selectedYear: String = "All" // Year filter
+    
+    // Available years for filter
+    private let availableYears = ["All", "2025", "2026", "2027", "2028", "2029", "2030"]
     
     // Animation states
     @State private var cardRotation: Double = 0
@@ -161,6 +166,23 @@ struct ExploreView: View {
             }
             .navigationTitle("Explore")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Filter by Year", selection: $selectedYear) {
+                            ForEach(availableYears, id: \.self) { year in
+                                Text(year).tag(year)
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "line.3.horizontal.decrease.circle")
+                            Text(selectedYear == "All" ? "Year" : selectedYear)
+                                .font(.subheadline)
+                        }
+                    }
+                }
+            }
             .navigationDestination(isPresented: $isShowingDetailView) {
                 if !cardStack.isEmpty {
                     OtherProfileDetailView(profile: cardStack[0])
@@ -168,9 +190,14 @@ struct ExploreView: View {
             }
             .onAppear {
                 setupManagers()
-                if exploreProfiles.isEmpty {
+                if allProfiles.isEmpty {
                     loadExploreProfiles()
+                } else {
+                    applyYearFilter()
                 }
+            }
+            .onChange(of: selectedYear) { oldValue, newValue in
+                applyYearFilter()
             }
             .refreshable {
                 loadExploreProfiles()
@@ -382,23 +409,11 @@ struct ExploreView: View {
             do {
                 let users = try await authManager.fetchAllUsers()
                 await MainActor.run {
-                    // Filter out users we've already swiped on
-                    exploreProfiles = users.filter { swipeManager.shouldShowUser($0) }
+                    // Store all profiles (filtered by swipe status only)
+                    allProfiles = users.filter { swipeManager.shouldShowUser($0) }
                     
-                    // Initialize card stack with just first card, then dynamically add others
-                    if !exploreProfiles.isEmpty {
-                        cardStack = [exploreProfiles[0]]
-                        currentProfileIndex = 1 // Start at 1 since we used index 0
-                        
-                        // Dynamically add cards 2 and 3 using the same system as cards 4+
-                        for i in 1..<min(3, exploreProfiles.count) {
-                            cardStack.append(exploreProfiles[i])
-                            currentProfileIndex += 1
-                        }
-                    } else {
-                        cardStack = []
-                        currentProfileIndex = 0
-                    }
+                    // Apply year filter
+                    applyYearFilter()
                     
                     isLoading = false
                     
@@ -418,6 +433,33 @@ struct ExploreView: View {
                 }
             }
         }
+    }
+    
+    private func applyYearFilter() {
+        // Filter profiles based on selected year
+        if selectedYear == "All" {
+            exploreProfiles = allProfiles
+        } else {
+            exploreProfiles = allProfiles.filter { $0.year == selectedYear }
+        }
+        
+        // Reset card stack with filtered profiles
+        if !exploreProfiles.isEmpty {
+            cardStack = [exploreProfiles[0]]
+            currentProfileIndex = 1
+            
+            // Add cards 2 and 3 if available
+            for i in 1..<min(3, exploreProfiles.count) {
+                cardStack.append(exploreProfiles[i])
+                currentProfileIndex += 1
+            }
+        } else {
+            cardStack = []
+            currentProfileIndex = 0
+        }
+        
+        print("🔍 Applied year filter: \(selectedYear)")
+        print("📊 Filtered profiles count: \(exploreProfiles.count)")
     }
 }
 
