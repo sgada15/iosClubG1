@@ -16,7 +16,25 @@ struct EditProfileView: View {
     @State private var newInterest = ""
     @State private var newClub = ""
     @State private var isLoading = false
+    @State private var isSaving = false
     @State private var saveError: String?
+    
+    // Constants
+    private let graduationYears = ["2025", "2026", "2027", "2028", "2029", "2030"]
+    private let personalityQuestions = [
+        "What do you do in your free time?",
+        "What are 3 words to describe yourself?",
+        "What are you passionate about?",
+        "What is your favorite study spot?"
+    ]
+    
+    // Computed Properties
+    private var isFormValid: Bool {
+        !profile.name.isEmpty &&
+        !profile.username.isEmpty &&
+        !profile.major.isEmpty &&
+        !profile.year.isEmpty
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -301,6 +319,94 @@ struct EditProfileView: View {
                     isSaving = false
                     saveError = "Failed to save profile: \(error.localizedDescription)"
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Helper Views
+
+struct SectionHeader: View {
+    let title: String
+    
+    var body: some View {
+        Text(title)
+            .font(.headline)
+            .fontWeight(.semibold)
+            .foregroundColor(.primary)
+    }
+}
+
+struct CustomTextFieldStyle: TextFieldStyle {
+    func _body(configuration: TextField<Self._Label>) -> some View {
+        configuration
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+    }
+}
+
+// Alternative: Use a ViewModifier approach if TextFieldStyle doesn't work
+extension View {
+    func customTextFieldStyle() -> some View {
+        self
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+    }
+}
+
+struct InterestTagsView: View {
+    @Binding var interests: [String]
+    
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+            ForEach(interests.indices, id: \.self) { index in
+                HStack {
+                    Text(interests[index])
+                        .font(.caption)
+                        .lineLimit(1)
+                    
+                    Button {
+                        interests.remove(at: index)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color(.systemGray5))
+                .cornerRadius(16)
+            }
+        }
+    }
+}
+
+struct ClubTagsView: View {
+    @Binding var clubs: [String]
+    
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+            ForEach(clubs.indices, id: \.self) { index in
+                HStack {
+                    Text(clubs[index])
+                        .font(.caption)
+                        .lineLimit(1)
+                    
+                    Button {
+                        clubs.remove(at: index)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color(.systemGray5))
+                .cornerRadius(16)
             }
         }
     }
