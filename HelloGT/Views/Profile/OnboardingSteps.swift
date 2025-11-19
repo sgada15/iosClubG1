@@ -110,7 +110,7 @@ struct BasicInfoStepView: View {
                     text: $profile.major,
                     isValid: $majorValid,
                     validation: { !$0.isEmpty },
-                    placeholder: "Computer Science"
+                    placeholder: "Enter your major"
                 )
                 
                 YearPickerField(
