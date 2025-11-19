@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SavedProfilesView: View {
-    @StateObject private var savedProfilesManager = SavedProfilesManager()
+    @EnvironmentObject var savedProfilesManager: SavedProfilesManager
     
     var body: some View {
         NavigationView {
@@ -61,6 +61,13 @@ struct SavedProfilesView: View {
                 }
             }
             .navigationTitle("Saved Profiles")
+            .refreshable {
+                savedProfilesManager.reloadSavedProfiles()
+            }
+            .onAppear {
+                // Ensure saved profiles are loaded when view appears
+                savedProfilesManager.reloadSavedProfiles()
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ import FirebaseAuth
 struct MainTabView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @StateObject private var notificationManager = NotificationManager()
+    @StateObject private var savedProfilesManager = SavedProfilesManager()
     
     @State private var currentUserProfile: UserProfile?
     @State private var isLoadingProfile = true
@@ -33,6 +34,7 @@ struct MainTabView: View {
                         }
                         .environmentObject(authManager)
                         .environmentObject(notificationManager)
+                        .environmentObject(savedProfilesManager)
 
                     EventsView()
                         .tabItem {
@@ -44,6 +46,7 @@ struct MainTabView: View {
                             Label("Saved", systemImage: "bookmark")
                         }
                         .environmentObject(authManager)
+                        .environmentObject(savedProfilesManager)
 
                     FriendsView()
                         .tabItem {
@@ -72,8 +75,14 @@ struct MainTabView: View {
         .onAppear {
             loadCurrentUserProfile()
         }
-        .onChange(of: authManager.user) { _ in
+        .onChange(of: authManager.user) { oldValue, newValue in
             loadCurrentUserProfile()
+            // Reload saved profiles when user changes
+            if newValue != nil {
+                savedProfilesManager.reloadSavedProfiles()
+            } else {
+                savedProfilesManager.clearSavedProfiles()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .profileCompleted)) { _ in
             // Refresh profile after onboarding completion

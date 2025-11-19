@@ -12,7 +12,7 @@ import FirebaseAuth
 struct ExploreView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @EnvironmentObject var notificationManager: NotificationManager
-    @StateObject private var savedProfilesManager = SavedProfilesManager()
+    @EnvironmentObject var savedProfilesManager: SavedProfilesManager
     @StateObject private var swipeManager = SwipeManager()
     @State private var cardStack: [UserProfile] = []
     @State private var currentProfileIndex = 0
