@@ -1,6 +1,6 @@
 //
 //  AlertsView.swift
-//  HelloGT
+//  BuzzBuddy
 //
 //  Created by Assistant on 11/18/25.
 //

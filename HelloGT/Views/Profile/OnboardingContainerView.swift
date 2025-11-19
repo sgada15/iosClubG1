@@ -1,6 +1,6 @@
 //
 //  OnboardingContainerView.swift
-//  HelloGT
+//  BuzzBuddy
 //
 //  Created by Sanaa on 11/18/25.
 //
@@ -36,8 +36,8 @@ struct OnboardingContainerView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Background
-                Color(.systemGray6)
+                // Background - GT themed
+                LinearGradient.gtBackgroundGradient
                     .ignoresSafeArea()
                 
                 VStack(spacing: 0) {
@@ -192,7 +192,7 @@ struct OnboardingProgressView: View {
             
             ProgressView(value: progress)
                 .progressViewStyle(.linear)
-                .tint(.accentColor)
+                .tint(.gtGold)
         }
         .padding(.bottom, 20)
     }
