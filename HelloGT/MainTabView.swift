@@ -40,6 +40,7 @@ struct MainTabView: View {
                         .tabItem {
                             Label("Events", systemImage: "calendar")
                         }
+                        .environmentObject(authManager)
 
                     SavedProfilesView()
                         .tabItem {

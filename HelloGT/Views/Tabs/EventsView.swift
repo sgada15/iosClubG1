@@ -9,6 +9,7 @@ import SwiftUI
 
 struct EventsView: View {
     private let events = Event.sampleEvents
+    @StateObject private var attendanceManager = EventAttendanceManager()
     
     var body: some View {
         NavigationStack {
@@ -17,6 +18,7 @@ struct EventsView: View {
                     ForEach(events) { event in
                         NavigationLink(value: event) {
                             EventCardView(event: event)
+                                .environmentObject(attendanceManager)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
@@ -27,6 +29,19 @@ struct EventsView: View {
             .navigationTitle("Events")
             .navigationDestination(for: Event.self) { event in
                 EventDetailView(event: event)
+                    .environmentObject(attendanceManager)
+            }
+            .onAppear {
+                attendanceManager.startListeningToAttendance()
+                
+                // Load attendance for current events
+                let eventIds = events.map { $0.id }
+                Task {
+                    await attendanceManager.loadAttendanceForEvents(eventIds)
+                }
+            }
+            .onDisappear {
+                attendanceManager.stopListeningToAttendance()
             }
         }
     }

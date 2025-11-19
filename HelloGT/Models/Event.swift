@@ -8,8 +8,8 @@
 import Foundation
 import SwiftUI
 
-struct Event: Identifiable, Hashable {
-    let id = UUID()
+struct Event: Identifiable, Hashable, Codable {
+    let id: String // Change from UUID to String for Firebase compatibility
     let title: String
     let startDate: Date
     let endDate: Date
@@ -17,6 +17,27 @@ struct Event: Identifiable, Hashable {
     let description: String
     let categories: [String]
     let iconSystemName: String?
+    
+    // Custom initializer to generate consistent IDs
+    init(id: String? = nil, title: String, startDate: Date, endDate: Date, location: String, description: String, categories: [String], iconSystemName: String?) {
+        if let id = id {
+            self.id = id
+        } else {
+            // Create a clean Firebase-compatible ID from the title
+            let cleanTitle = title.lowercased()
+                .replacingOccurrences(of: " ", with: "-")
+                .replacingOccurrences(of: "[^a-z0-9-]", with: "", options: .regularExpression)
+                .prefix(50) // Limit length
+            self.id = String(cleanTitle)
+        }
+        self.title = title
+        self.startDate = startDate
+        self.endDate = endDate
+        self.location = location
+        self.description = description
+        self.categories = categories
+        self.iconSystemName = iconSystemName
+    }
     
     // MARK: - Date Formatting
     
