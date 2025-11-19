@@ -60,6 +60,19 @@ class NotificationManager: ObservableObject {
         return matchNotifications.filter { !$0.isRead }
     }
     
+    // MARK: - Get Acknowledged Match IDs
+    
+    /// Returns match IDs that have been acknowledged (notification has been read/opened)
+    /// Matches should only appear in Friends tab after being acknowledged
+    var acknowledgedMatchIds: Set<String> {
+        return Set(matchNotifications.filter { $0.isRead }.map { $0.matchId })
+    }
+    
+    /// Check if a match has been acknowledged (notification opened)
+    func isMatchAcknowledged(matchId: String) -> Bool {
+        return acknowledgedMatchIds.contains(matchId)
+    }
+    
     // MARK: - Update Unread Count
     
     private func updateUnreadCount() {

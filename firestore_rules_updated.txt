@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Profiles: users/{uid}
+    match /users/{uid} {
+      // Anyone signed in can read profiles (adjust to your needs)
+      allow read: if request.auth != null;
+
+      // Only the owner can write their profile and it must be valid
+      allow create, update, delete: if request.auth != null
+                                    && request.auth.uid == uid
+                                    && isValidProfile(request.resource.data);
+
+      function isValidProfile(data) {
+        // base fields
+        return data.name is string
+          && data.username is string
+          && data.major is string
+          && data.bio is string
+          && data.year is string
+          && data.interests is list
+          && data.clubs is list
+          && data.personalityAnswers is list
+          && data.personalityAnswers.size() == 4
+          && (data.year == "" || data.year in ["2025","2026","2027","2028","2029","2030"])
+          && (!('profilePhotoURL' in data) || data.profilePhotoURL is string || data.profilePhotoURL == null);
+      }
+    }
+
+    // Saved Profiles: savedProfiles/{userId}/profiles/{profileId}
+    match /savedProfiles/{userId}/profiles/{profileId} {
+      // Users can read and write their own saved profiles
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Swipes: swipes/{userId}/swipedRight/{targetUserId}
+    // Stores one-way swipes (when a user swipes right on someone)
+    match /swipes/{userId}/swipedRight/{targetUserId} {
+      // Users can only create swipes for themselves
+      // The path already ensures userId matches, so we just need to verify auth
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId;
+      
+      // Users can read their own swipes
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can delete their own swipes (if they want to undo)
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      
+      // No updates allowed (swipes are immutable)
+      allow update: if false;
+    }
+
+    // Matches: matches/{userId}/friends/{friendId}
+    // Stores bidirectional matches (when both users swiped right on each other)
+    match /matches/{userId}/friends/{friendId} {
+      // Users can read their own matches
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can create matches when both users have swiped right
+      // (App logic will verify both swipes exist before creating)
+      // The path already ensures userId matches, so we just need to verify auth
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId;
+      
+      // Users can delete their own matches (unfriend)
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      
+      // No updates allowed
+      allow update: if false;
+    }
+
+    // Username reservation: usernames/{usernameLowercased}
+    match /usernames/{uname} {
+      allow read: if true; // or request.auth != null
+
+      // Create if doc does not exist and caller sets their own uid
+      allow create: if request.auth != null
+                    && !exists(/databases/$(database)/documents/usernames/$(uname))
+                    && request.resource.data.keys().hasOnly(['uid'])
+                    && request.resource.data.uid == request.auth.uid;
+
+      // Update only by owner, and uid cannot change
+      allow update: if request.auth != null
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == resource.data.uid;
+
+      // Delete only by owner
+      allow delete: if request.auth != null
+                    && resource.data.uid == request.auth.uid;
+    }
+
+    // NEW: SwipeManager collections
+    
+    // Swipe Decisions: swipeDecisions/{decisionId}
+    match /swipeDecisions/{decisionId} {
+      // Users can create swipe decisions for themselves
+      allow create: if request.auth != null 
+                    && request.auth.uid == request.resource.data.userId;
+      
+      // Users can read swipe decisions they made or received
+      allow read: if request.auth != null && 
+                 (request.auth.uid == resource.data.userId || 
+                  request.auth.uid == resource.data.targetUserId);
+    }
+
+    // User Swipe Data: userSwipeData/{userId}
+    match /userSwipeData/{userId} {
+      // Users can read/write their own swipe data
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Matches (flat structure): matches/{matchId} - UPDATED FOR FRIENDS ACCESS
+    match /matches/{matchId} {
+      // Allow any authenticated user to read matches (so they can find their own matches)
+      allow read: if request.auth != null;
+      
+      // Users can create matches they're part of
+      allow create: if request.auth != null && 
+                   (request.auth.uid == request.resource.data.user1Id || 
+                    request.auth.uid == request.resource.data.user2Id);
+      
+      // Users can delete matches they're part of (unfriend functionality)
+      allow delete: if request.auth != null && 
+                   (resource.data.user1Id == request.auth.uid || 
+                    resource.data.user2Id == request.auth.uid);
+      
+      // No updates allowed (matches should not be modified)
+      allow update: if false;
+    }
+
+    // NEW: Event attendance rules
+    match /eventAttendance/{eventId} {
+      // Anyone authenticated can read event attendance
+      allow read: if request.auth != null;
+      
+      // Users can add/remove themselves from event attendance
+      allow write: if request.auth != null;
+    }
+
+  }
+}
+
