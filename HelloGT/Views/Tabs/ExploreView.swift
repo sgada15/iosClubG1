@@ -457,13 +457,18 @@ struct ProfileCard: View {
                 // Profile Content (Center-aligned Instagram style)
                 VStack(spacing: 16) {
                     // Profile Photo
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 120, height: 120)
-                        .clipShape(Circle())
-                        .foregroundColor(.gray)
-                        .shadow(radius: 8)
+                    AsyncImage(url: URL(string: profile.profilePhotoURL ?? "")) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                    }
+                    .frame(width: 120, height: 120)
+                    .clipShape(Circle())
+                    .shadow(radius: 8)
                     
                     // Name and Major (Center-aligned)
                     VStack(spacing: 6) {

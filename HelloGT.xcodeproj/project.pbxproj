@@ -13,6 +13,7 @@
 		3299344B2ECABD75004FB772 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3299344A2ECABD75004FB772 /* FirebaseFirestore */; };
 		3299344D2ECABD75004FB772 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 3299344C2ECABD75004FB772 /* FirebaseMessaging */; };
 		3299344F2ECABD75004FB772 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 3299344E2ECABD75004FB772 /* FirebaseStorage */; };
+		32B2FB872ECD635B00294E23 /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 32B2FB862ECD635B00294E23 /* FirebaseStorageCombine-Community */; };
 		337692E82ECAD43900DCDEBE /* AuthenticationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337692E72ECAD43900DCDEBE /* AuthenticationManager.swift */; };
 		337692EA2ECAD45900DCDEBE /* AuthenticationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 337692E92ECAD45900DCDEBE /* AuthenticationView.swift */; };
 /* End PBXBuildFile section */
@@ -41,6 +42,7 @@
 				329934472ECABD75004FB772 /* FirebaseAnalytics in Frameworks */,
 				329934492ECABD75004FB772 /* FirebaseAuth in Frameworks */,
 				3299344F2ECABD75004FB772 /* FirebaseStorage in Frameworks */,
+				32B2FB872ECD635B00294E23 /* FirebaseStorageCombine-Community in Frameworks */,
 				3299344B2ECABD75004FB772 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -92,6 +94,7 @@
 				3299344A2ECABD75004FB772 /* FirebaseFirestore */,
 				3299344C2ECABD75004FB772 /* FirebaseMessaging */,
 				3299344E2ECABD75004FB772 /* FirebaseStorage */,
+				32B2FB862ECD635B00294E23 /* FirebaseStorageCombine-Community */,
 			);
 			productName = HelloGT;
 			productReference = 32D747152EB3CC4000A15D5A /* HelloGT.app */;
@@ -406,6 +409,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 32A685FA2ECABA4900533C12 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		32B2FB862ECD635B00294E23 /* FirebaseStorageCombine-Community */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 32A685FA2ECABA4900533C12 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseStorageCombine-Community";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

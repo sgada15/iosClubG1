@@ -8,6 +8,7 @@
 import Foundation
 import FirebaseAuth
 import FirebaseFirestore
+import FirebaseStorage
 import Combine
 
 @MainActor
@@ -19,6 +20,7 @@ class AuthenticationManager: ObservableObject {
     
     private var authStateHandle: AuthStateDidChangeListenerHandle?
     private let db = Firestore.firestore()
+    private let storage = Storage.storage()
     
     init() {
         // Check current user immediately on initialization
@@ -319,6 +321,50 @@ class AuthenticationManager: ObservableObject {
         print("✅ Created new profile for existing user: \(email)")
         return newProfile
     }
+    
+    // MARK: - Profile Image Upload
+    
+    /// Upload profile image to Firebase Storage
+    func uploadProfileImage(_ image: UIImage, userId: String) async throws -> String {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw ImageUploadError.compressionFailed
+        }
+        
+        // Create storage reference
+        let storageRef = storage.reference()
+        let imageRef = storageRef.child("profile_pictures/\(userId)/profile.jpg")
+        
+        // Upload image data
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        
+        _ = try await imageRef.putDataAsync(imageData, metadata: metadata)
+        
+        // Get download URL
+        let downloadURL = try await imageRef.downloadURL()
+        return downloadURL.absoluteString
+    }
+    
+    /// Delete old profile image from Storage
+    func deleteOldProfileImage(url: String) async throws {
+        do {
+            let storageRef = storage.reference(forURL: url)
+            try await storageRef.delete()
+            print("✅ Successfully deleted old profile image")
+        } catch {
+            print("⚠️ Failed to delete old profile image: \(error.localizedDescription)")
+            // Don't throw the error - deletion failure shouldn't block the upload of new image
+        }
+    }
+    
+    /// Update user profile with new image URL
+    func updateProfileImage(userId: String, imageURL: String) async throws {
+        let userRef = db.collection("users").document(userId)
+        try await userRef.updateData([
+            "profilePhotoURL": imageURL,
+            "updatedAt": FieldValue.serverTimestamp()
+        ])
+    }
 }
 
 // MARK: - Custom Auth Errors
@@ -329,6 +375,24 @@ enum AuthError: LocalizedError {
         switch self {
         case .invalidGmailEmail:
             return "Please use a Gmail address (@gmail.com)"
+        }
+    }
+}
+
+// MARK: - Image Upload Errors
+enum ImageUploadError: LocalizedError {
+    case compressionFailed
+    case uploadFailed
+    case urlGenerationFailed
+    
+    var errorDescription: String? {
+        switch self {
+        case .compressionFailed:
+            return "Failed to compress image"
+        case .uploadFailed:
+            return "Failed to upload image"
+        case .urlGenerationFailed:
+            return "Failed to generate download URL"
         }
     }
 }
