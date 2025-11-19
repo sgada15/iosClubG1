@@ -48,12 +48,14 @@ struct FriendsView: View {
                             GridItem(.flexible(), spacing: 20)
                         ], spacing: 20) {
                             ForEach(matchedProfiles, id: \.id) { profile in
-                                NavigationLink {
-                                    OtherProfileDetailView(profile: profile, isCurrentUser: false)
-                                } label: {
-                                    MatchCard(profile: profile)
-                                }
-                                .buttonStyle(.plain)
+                                MatchCard(
+                                    profile: profile,
+                                    onUnfriend: {
+                                        Task {
+                                            await unfriend(userId: profile.id)
+                                        }
+                                    }
+                                )
                             }
                         }
                         .padding(.horizontal, 20)
@@ -134,9 +136,10 @@ struct FriendsView: View {
         }
         
         print("🔄 Loading matched profiles...")
-        print("📊 Total matches: \(allMatchedUserIds.count)")
-        print("✅ Acknowledged matches: \(acknowledgedMatchIds.count)")
+        print("📊 Total matches in swipeManager: \(swipeManager.matches.count)")
+        print("📊 Acknowledged matches: \(acknowledgedMatches.count)")
         print("👥 Loading profiles for \(acknowledgedUserIds.count) acknowledged matches")
+        print("👥 User IDs to load: \(acknowledgedUserIds)")
         
         Task {
             var profiles: [UserProfile] = []
@@ -145,7 +148,7 @@ struct FriendsView: View {
                 do {
                     if let profile = try await authManager.loadUserProfile(uid: userId) {
                         profiles.append(profile)
-                        print("✅ Loaded profile: \(profile.name) - Major: '\(profile.major)' Year: '\(profile.year)'")
+                        print("✅ Loaded profile: \(profile.name) (ID: \(profile.id))")
                     } else {
                         print("⚠️ No profile found for user ID: \(userId)")
                     }
@@ -155,66 +158,123 @@ struct FriendsView: View {
             }
             
             await MainActor.run {
-                matchedProfiles = profiles
+                // Ensure we're not including any profiles that shouldn't be there
+                // Filter out any profiles that don't have a corresponding acknowledged match
+                let validUserIds = Set(acknowledgedUserIds)
+                matchedProfiles = profiles.filter { validUserIds.contains($0.id) }
                 isLoading = false
-                print("✅ Loaded \(profiles.count) acknowledged matched profiles total")
+                print("✅ Loaded \(matchedProfiles.count) acknowledged matched profiles total")
+                print("📋 Final profiles: \(matchedProfiles.map { $0.name })")
             }
+        }
+    }
+    
+    private func unfriend(userId: String) async {
+        print("🔄 Starting unfriend process for user: \(userId)")
+        
+        // Immediately remove from UI for better UX
+        await MainActor.run {
+            matchedProfiles.removeAll { $0.id == userId }
+            print("🗑️ Removed \(userId) from UI immediately")
+        }
+        
+        do {
+            try await swipeManager.unfriend(userId: userId)
+            print("✅ Unfriend completed in Firebase")
+            
+            // Don't reload immediately - the Firestore listener will update swipeManager.matches
+            // and the onChange handler will trigger loadMatchedProfiles automatically
+            // This prevents the profile from reappearing if the listener hasn't fired yet
+        } catch {
+            print("❌ Failed to unfriend user \(userId): \(error)")
+            // If deletion failed, reload to restore the profile
+            await loadMatchedProfiles()
         }
     }
 }
 
 struct MatchCard: View {
     let profile: UserProfile
+    let onUnfriend: () -> Void
+    
+    @State private var showUnfriendAlert = false
     
     var body: some View {
-        VStack(spacing: 16) {
-            // Bigger profile image
-            AsyncImage(url: URL(string: profile.profilePhotoURL ?? "")) { image in
-                image
-                    .resizable()
-                    .scaledToFill()
-            } placeholder: {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 50))
-                    .foregroundColor(.gray)
+        ZStack(alignment: .topTrailing) {
+            NavigationLink {
+                OtherProfileDetailView(profile: profile, isCurrentUser: false)
+            } label: {
+                VStack(spacing: 16) {
+                    // Bigger profile image
+                    AsyncImage(url: URL(string: profile.profilePhotoURL ?? "")) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                    }
+                    .frame(width: 100, height: 100)
+                    .clipShape(Circle())
+                    
+                    VStack(spacing: 6) {
+                        Text(profile.name)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                        
+                        // Always reserve space for major (but show empty if not available)
+                        Text(profile.major)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .frame(minHeight: 20) // Reserve space even if empty
+                        
+                        // Always reserve space for year (but show empty if not available)
+                        Text(profile.year.isEmpty ? "" : "Class of \(profile.year)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(minHeight: 16) // Reserve space even if empty
+                    }
+                    .frame(height: 70) // Fixed height for text area
+                    
+                    Button("Message") {
+                        // TODO: Open chat functionality
+                        print("Opening chat with \(profile.name)")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                }
+                .frame(minHeight: 220) // Taller minimum height
+                .frame(maxWidth: .infinity) // Take full width available
+                .padding(20) // More generous padding
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
             }
-            .frame(width: 100, height: 100)
-            .clipShape(Circle())
+            .buttonStyle(.plain)
             
-            VStack(spacing: 6) {
-                Text(profile.name)
+            // Delete button in top-right corner (outside NavigationLink)
+            Button {
+                showUnfriendAlert = true
+            } label: {
+                Image(systemName: "xmark.circle.fill")
                     .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                // Always reserve space for major (but show empty if not available)
-                Text(profile.major)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                    .frame(minHeight: 20) // Reserve space even if empty
-                
-                // Always reserve space for year (but show empty if not available)
-                Text(profile.year.isEmpty ? "" : "Class of \(profile.year)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(minHeight: 16) // Reserve space even if empty
+                    .foregroundColor(.red)
+                    .background(Color.white.clipShape(Circle()))
             }
-            .frame(height: 70) // Fixed height for text area
-            
-            Button("Message") {
-                // TODO: Open chat functionality
-                print("Opening chat with \(profile.name)")
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.regular)
+            .padding(8)
+            .zIndex(1) // Ensure button is above NavigationLink
         }
-        .frame(minHeight: 220) // Taller minimum height
-        .frame(maxWidth: .infinity) // Take full width available
-        .padding(20) // More generous padding
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .alert("Unfriend \(profile.name)?", isPresented: $showUnfriendAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Unfriend", role: .destructive) {
+                onUnfriend()
+            }
+        } message: {
+            Text("This will remove \(profile.name) from your friends list. They will also lose you as a friend.")
+        }
     }
 }

@@ -83,8 +83,10 @@ class SwipeManager: ObservableObject {
         let hasMatch = try? await checkForMatch(targetUserId: targetUser.id)
         
         if hasMatch == true {
-            // Create match!
-            let match = Match(user1Id: currentUserId, user2Id: targetUser.id)
+            // Create match with sorted user IDs to ensure consistency
+            // This ensures the match document has the same structure regardless of who creates it
+            let sortedIds = [currentUserId, targetUser.id].sorted()
+            let match = Match(user1Id: sortedIds[0], user2Id: sortedIds[1])
             try? await createMatch(match)
             
             // Add to notification system instead of showing popup immediately
@@ -166,7 +168,15 @@ class SwipeManager: ObservableObject {
         let data = try JSONEncoder().encode(match)
         let dict = try JSONSerialization.jsonObject(with: data) as! [String: Any]
         
-        try await db.collection("matches").document(match.id).setData(dict)
+        print("💾 Creating match document: \(match.id)")
+        print("   user1Id: \(match.user1Id)")
+        print("   user2Id: \(match.user2Id)")
+        print("   currentUserId: \(currentUserId)")
+        
+        // Use merge to avoid overwriting if match already exists
+        try await db.collection("matches").document(match.id).setData(dict, merge: false)
+        
+        print("✅ Match document created/updated: \(match.id)")
         
         // Update both users' match lists
         userSwipeData.matches.append(match.id)
@@ -235,6 +245,8 @@ class SwipeManager: ObservableObject {
     private func loadMatches() {
         Task {
             do {
+                print("🔍 Loading matches for user: \(currentUserId)")
+                
                 let query = db.collection("matches")
                     .whereField("user1Id", isEqualTo: currentUserId)
                 
@@ -244,17 +256,37 @@ class SwipeManager: ObservableObject {
                 let snapshot1 = try await query.getDocuments()
                 let snapshot2 = try await query2.getDocuments()
                 
-                var loadedMatches: [Match] = []
+                print("📊 Query 1 (user1Id): Found \(snapshot1.documents.count) matches")
+                print("📊 Query 2 (user2Id): Found \(snapshot2.documents.count) matches")
                 
-                for document in snapshot1.documents + snapshot2.documents {
+                var loadedMatches: [Match] = []
+                var seenMatchIds = Set<String>()
+                
+                // Process query1 results
+                for document in snapshot1.documents {
                     let data = try JSONSerialization.data(withJSONObject: document.data())
                     let match = try JSONDecoder().decode(Match.self, from: data)
-                    loadedMatches.append(match)
+                    if !seenMatchIds.contains(match.id) {
+                        loadedMatches.append(match)
+                        seenMatchIds.insert(match.id)
+                        print("  ✅ Match: \(match.id) - user1Id: \(match.user1Id), user2Id: \(match.user2Id)")
+                    }
+                }
+                
+                // Process query2 results
+                for document in snapshot2.documents {
+                    let data = try JSONSerialization.data(withJSONObject: document.data())
+                    let match = try JSONDecoder().decode(Match.self, from: data)
+                    if !seenMatchIds.contains(match.id) {
+                        loadedMatches.append(match)
+                        seenMatchIds.insert(match.id)
+                        print("  ✅ Match: \(match.id) - user1Id: \(match.user1Id), user2Id: \(match.user2Id)")
+                    }
                 }
                 
                 await MainActor.run {
                     matches = loadedMatches
-                    print("✅ Loaded \(matches.count) matches")
+                    print("✅ Loaded \(matches.count) total unique matches for user \(currentUserId)")
                     
                     // Check for matches that don't have notifications yet
                     Task {
@@ -292,10 +324,15 @@ class SwipeManager: ObservableObject {
             
             guard let snapshot = snapshot else { return }
             
-            // Process new matches
+            // Process match changes (added, removed)
             for documentChange in snapshot.documentChanges {
-                if documentChange.type == .added {
+                switch documentChange.type {
+                case .added:
                     self.handleNewMatch(document: documentChange.document)
+                case .removed:
+                    self.handleRemovedMatch(document: documentChange.document)
+                default:
+                    break
                 }
             }
         }
@@ -311,10 +348,15 @@ class SwipeManager: ObservableObject {
             
             guard let snapshot = snapshot else { return }
             
-            // Process new matches
+            // Process match changes (added, removed)
             for documentChange in snapshot.documentChanges {
-                if documentChange.type == .added {
+                switch documentChange.type {
+                case .added:
                     self.handleNewMatch(document: documentChange.document)
+                case .removed:
+                    self.handleRemovedMatch(document: documentChange.document)
+                default:
+                    break
                 }
             }
         }
@@ -351,6 +393,19 @@ class SwipeManager: ObservableObject {
                 }
             } catch {
                 print("❌ Failed to decode new match: \(error)")
+            }
+        }
+    }
+    
+    /// Handles a removed match detected by the listener
+    private func handleRemovedMatch(document: QueryDocumentSnapshot) {
+        Task {
+            let matchId = document.documentID
+            
+            await MainActor.run {
+                // Remove match from local array
+                matches.removeAll { $0.id == matchId }
+                print("🗑️ Match removed in real-time: \(matchId)")
             }
         }
     }
@@ -435,6 +490,96 @@ class SwipeManager: ObservableObject {
             clubs: clubs,
             personalityAnswers: personalityAnswers
         )
+    }
+    
+    // MARK: - Unfriend Functionality
+    
+    /// Unfriends a user by deleting the match from both users
+    func unfriend(userId: String) async throws {
+        guard !currentUserId.isEmpty else {
+            throw NSError(domain: "SwipeManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "No current user set"])
+        }
+        
+        print("🗑️ Attempting to unfriend user: \(userId)")
+        print("   Current user: \(currentUserId)")
+        print("   Current matches count: \(matches.count)")
+        
+        // Find the match between current user and the friend
+        // Try to find in local matches first
+        var match: Match? = matches.first(where: { match in
+            (match.user1Id == currentUserId && match.user2Id == userId) ||
+            (match.user1Id == userId && match.user2Id == currentUserId)
+        })
+        
+        // If not found locally, construct the match ID and try to delete it anyway
+        // Match IDs are always sorted, so we can construct it
+        if match == nil {
+            let sortedIds = [currentUserId, userId].sorted()
+            let matchId = "\(sortedIds[0])_\(sortedIds[1])"
+            print("⚠️ Match not found in local array, trying to delete by ID: \(matchId)")
+            
+            // Try to delete the match document directly
+            do {
+                try await db.collection("matches").document(matchId).delete()
+                print("✅ Successfully deleted match document: \(matchId)")
+                
+                // Remove from local matches array if it exists
+                await MainActor.run {
+                    matches.removeAll { $0.id == matchId }
+                    userSwipeData.matches.removeAll { $0 == matchId }
+                }
+                
+                // Save updated swipe data
+                try? await saveUserSwipeData()
+                
+                print("✅ Successfully unfriended user \(userId)")
+                return
+            } catch {
+                print("❌ Failed to delete match document: \(error)")
+                throw error
+            }
+        }
+        
+        guard let foundMatch = match else {
+            print("⚠️ No match found between \(currentUserId) and \(userId)")
+            throw NSError(domain: "SwipeManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "No match found"])
+        }
+        
+        print("🗑️ Found match: \(foundMatch.id)")
+        print("   user1Id: \(foundMatch.user1Id)")
+        print("   user2Id: \(foundMatch.user2Id)")
+        
+        // Delete the match document from Firebase
+        do {
+            try await db.collection("matches").document(foundMatch.id).delete()
+            print("✅ Deleted match document from Firebase: \(foundMatch.id)")
+        } catch {
+            print("❌ Error deleting match document: \(error)")
+            throw error
+        }
+        
+        // Remove from local matches array
+        await MainActor.run {
+            let beforeCount = matches.count
+            matches.removeAll { $0.id == foundMatch.id }
+            let afterCount = matches.count
+            print("📊 Matches array: \(beforeCount) -> \(afterCount)")
+        }
+        
+        // Remove from userSwipeData matches array
+        await MainActor.run {
+            userSwipeData.matches.removeAll { $0 == foundMatch.id }
+        }
+        
+        // Save updated swipe data
+        do {
+            try await saveUserSwipeData()
+            print("✅ Saved updated swipe data")
+        } catch {
+            print("⚠️ Failed to save swipe data: \(error)")
+        }
+        
+        print("✅ Successfully unfriended user \(userId)")
     }
     
     // MARK: - Helper Functions
