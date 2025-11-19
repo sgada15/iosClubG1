@@ -1,10 +1,20 @@
 import SwiftUI
 import FirebaseAuth
+import Combine
+
+enum MainTab: Hashable {
+    case explore, events, saved, friends, profile
+}
+
+final class TabRouter: ObservableObject {
+    @Published var selectedTab: MainTab = .explore
+}
 
 struct MainTabView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     @StateObject private var notificationManager = NotificationManager()
     @StateObject private var savedProfilesManager = SavedProfilesManager()
+    @StateObject private var tabRouter = TabRouter()
     
     @State private var currentUserProfile: UserProfile?
     @State private var isLoadingProfile = true
@@ -27,27 +37,33 @@ struct MainTabView: View {
                     .environmentObject(authManager)
             } else {
                 // Main app content
-                TabView {
+                TabView(selection: $tabRouter.selectedTab) {
                     ExploreView()
                         .tabItem {
-                            Label("Explore", systemImage: "sparkles")
+                            Label("Explore", systemImage: "magnifyingglass")
                         }
+                        .tag(MainTab.explore)
                         .environmentObject(authManager)
                         .environmentObject(notificationManager)
                         .environmentObject(savedProfilesManager)
+                        .environmentObject(tabRouter)
 
                     EventsView()
                         .tabItem {
                             Label("Events", systemImage: "calendar")
                         }
+                        .tag(MainTab.events)
                         .environmentObject(authManager)
+                        .environmentObject(tabRouter)
 
                     SavedProfilesView()
                         .tabItem {
                             Label("Saved", systemImage: "bookmark.fill")
                         }
+                        .tag(MainTab.saved)
                         .environmentObject(authManager)
                         .environmentObject(savedProfilesManager)
+                        .environmentObject(tabRouter)
 
                     FriendsView()
                         .tabItem {
@@ -58,14 +74,18 @@ struct MainTabView: View {
                                 Label("Friends", systemImage: "person.2.fill")
                             }
                         }
+                        .tag(MainTab.friends)
                         .environmentObject(authManager)
                         .environmentObject(notificationManager)
+                        .environmentObject(tabRouter)
 
                     MyProfileView()
                         .tabItem {
                             Label("Profile", systemImage: "person.crop.circle.fill")
                         }
+                        .tag(MainTab.profile)
                         .environmentObject(authManager)
+                        .environmentObject(tabRouter)
                 }
                 .gtTabBarStyle()
                 .onAppear {
@@ -134,7 +154,7 @@ struct MainTabView: View {
     }
     
     private func setupNotificationManager() {
-        guard let user = authManager.user else { return }
-        notificationManager.setCurrentUser(userId: user.uid)
+        guard let userId = authManager.user?.uid else { return }
+        notificationManager.setCurrentUser(userId: userId)
     }
 }

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SavedProfilesView: View {
     @EnvironmentObject var savedProfilesManager: SavedProfilesManager
+    @EnvironmentObject var tabRouter: TabRouter
     
     var body: some View {
         NavigationView {
@@ -32,8 +33,7 @@ struct SavedProfilesView: View {
                         
                         // Optional: Add a button to go to explore
                         Button("Explore Profiles") {
-                            // This would need to be handled by a parent view to switch tabs
-                            // For now, we'll just show the button
+                            tabRouter.selectedTab = .explore
                         }
                         .buttonStyle(.borderedProminent)
                     }
