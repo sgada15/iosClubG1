@@ -162,8 +162,8 @@ struct ExploreView: View {
             .navigationTitle("Explore")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: $isShowingDetailView) {
-                if currentProfileIndex < exploreProfiles.count {
-                    OtherProfileDetailView(profile: exploreProfiles[currentProfileIndex])
+                if !cardStack.isEmpty {
+                    OtherProfileDetailView(profile: cardStack[0])
                 }
             }
             .onAppear {
@@ -385,9 +385,21 @@ struct ExploreView: View {
                     // Filter out users we've already swiped on
                     exploreProfiles = users.filter { swipeManager.shouldShowUser($0) }
                     
-                    // Initialize card stack with first 3 profiles
-                    cardStack = Array(exploreProfiles.prefix(3))
-                    currentProfileIndex = 0
+                    // Initialize card stack with just first card, then dynamically add others
+                    if !exploreProfiles.isEmpty {
+                        cardStack = [exploreProfiles[0]]
+                        currentProfileIndex = 1 // Start at 1 since we used index 0
+                        
+                        // Dynamically add cards 2 and 3 using the same system as cards 4+
+                        for i in 1..<min(3, exploreProfiles.count) {
+                            cardStack.append(exploreProfiles[i])
+                            currentProfileIndex += 1
+                        }
+                    } else {
+                        cardStack = []
+                        currentProfileIndex = 0
+                    }
+                    
                     isLoading = false
                     
                     if exploreProfiles.isEmpty {
@@ -395,6 +407,7 @@ struct ExploreView: View {
                     } else {
                         print("📱 Loaded \(exploreProfiles.count) new users for explore feed")
                         print("🃏 Card stack initialized with \(cardStack.count) cards")
+                        print("📊 Starting currentProfileIndex: \(currentProfileIndex)")
                     }
                 }
             } catch {
