@@ -169,12 +169,17 @@ struct MatchCard: View {
     var body: some View {
         VStack(spacing: 16) {
             // Bigger profile image
-            Image(systemName: "person.circle.fill")
-                .resizable()
-                .scaledToFill()
-                .frame(width: 100, height: 100)
-                .clipShape(Circle())
-                .foregroundColor(.gray)
+            AsyncImage(url: URL(string: profile.profilePhotoURL ?? "")) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 50))
+                    .foregroundColor(.gray)
+            }
+            .frame(width: 100, height: 100)
+            .clipShape(Circle())
             
             VStack(spacing: 6) {
                 Text(profile.name)

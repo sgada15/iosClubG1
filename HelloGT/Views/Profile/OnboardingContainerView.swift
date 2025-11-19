@@ -13,6 +13,7 @@ struct OnboardingContainerView: View {
     @State private var currentStep = 0
     @State private var profile: UserProfile
     @State private var isCompleting = false
+    @State private var profileImage: UIImage? // Add this to store the selected image
     
     init() {
         // Initialize with current user's basic info
@@ -58,7 +59,10 @@ struct OnboardingContainerView: View {
                         BasicInfoStepView(
                             profile: $profile,
                             onNext: { goToNextStep() },
-                            onBack: { goToPreviousStep() }
+                            onBack: { goToPreviousStep() },
+                            onImageSelected: { image in
+                                profileImage = image
+                            }
                         )
                         .tag(1)
                         
@@ -130,6 +134,15 @@ struct OnboardingContainerView: View {
         
         Task {
             do {
+                // First, upload profile image if one was selected
+                if let profileImage = profileImage {
+                    print("📸 Uploading profile image during onboarding...")
+                    let imageURL = try await authManager.uploadProfileImage(profileImage, userId: profile.id)
+                    profile.profilePhotoURL = imageURL
+                    print("✅ Profile image uploaded successfully")
+                }
+                
+                // Save the complete profile
                 try await authManager.saveUserProfile(profile)
                 
                 // Small delay to ensure Firebase write completes

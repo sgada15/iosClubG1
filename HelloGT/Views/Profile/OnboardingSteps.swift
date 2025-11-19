@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 // MARK: - Welcome Step
 struct WelcomeStepView: View {
@@ -61,88 +62,125 @@ struct BasicInfoStepView: View {
     @Binding var profile: UserProfile
     let onNext: () -> Void
     let onBack: () -> Void
+    let onImageSelected: ((UIImage?) -> Void)? // Add callback for image
     
     @State private var nameValid = false
     @State private var usernameValid = false
     @State private var majorValid = false
     @State private var yearValid = false
+    @State private var photoValid = false
+    
+    // Photo picker states
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var profileImage: UIImage?
+    @State private var isUploadingPhoto = false
+    @State private var showPhotoError = false
+    @State private var photoErrorMessage = ""
     
     private var isStepValid: Bool {
-        nameValid && usernameValid && majorValid && yearValid
+        nameValid && usernameValid && majorValid && yearValid && photoValid
     }
     
     private let years = ["2025", "2026", "2027", "2028", "2029", "2030"]
     
     var body: some View {
-        VStack(spacing: 30) {
-            // Header
-            VStack(spacing: 8) {
-                Text("Basic Information")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Text("Help other Yellow Jackets find you")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.top, 40)
-            
-            // Form
-            VStack(spacing: 20) {
-                ValidatedTextField(
-                    title: "Full Name",
-                    text: $profile.name,
-                    isValid: $nameValid,
-                    validation: { !$0.isEmpty },
-                    placeholder: "John Doe"
-                )
-                
-                ValidatedTextField(
-                    title: "Username",
-                    text: $profile.username,
-                    isValid: $usernameValid,
-                    validation: { !$0.isEmpty && $0.count >= 3 },
-                    placeholder: "johndoe"
-                )
-                
-                ValidatedTextField(
-                    title: "Major",
-                    text: $profile.major,
-                    isValid: $majorValid,
-                    validation: { !$0.isEmpty },
-                    placeholder: "Enter your major"
-                )
-                
-                YearPickerField(
-                    selectedYear: $profile.year,
-                    isValid: $yearValid,
-                    years: years
-                )
-            }
-            .padding(.horizontal, 40)
-            
-            Spacer()
-            
-            // Navigation
-            HStack(spacing: 20) {
-                Button("Back") {
-                    onBack()
+        ScrollView {
+            VStack(spacing: 30) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("Basic Information")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Text("Help other Yellow Jackets find you")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
                 
-                Button("Continue") {
-                    onNext()
+                // Form
+                VStack(spacing: 20) {
+                    // Profile Photo Section
+                    ProfilePhotoPickerField(
+                        selectedPhoto: $selectedPhoto,
+                        profileImage: $profileImage,
+                        isValid: $photoValid,
+                        isUploading: $isUploadingPhoto,
+                        onError: { message in
+                            photoErrorMessage = message
+                            showPhotoError = true
+                        }
+                    )
+                    
+                    ValidatedTextField(
+                        title: "Full Name",
+                        text: $profile.name,
+                        isValid: $nameValid,
+                        validation: { !$0.isEmpty },
+                        placeholder: "John Doe"
+                    )
+                    
+                    ValidatedTextField(
+                        title: "Username",
+                        text: $profile.username,
+                        isValid: $usernameValid,
+                        validation: { !$0.isEmpty && $0.count >= 3 },
+                        placeholder: "johndoe"
+                    )
+                    
+                    ValidatedTextField(
+                        title: "Major",
+                        text: $profile.major,
+                        isValid: $majorValid,
+                        validation: { !$0.isEmpty },
+                        placeholder: "Enter your major"
+                    )
+                    
+                    YearPickerField(
+                        selectedYear: $profile.year,
+                        isValid: $yearValid,
+                        years: years
+                    )
                 }
-                .buttonStyle(.borderedProminent)
-                .frame(maxWidth: .infinity)
-                .disabled(!isStepValid)
+                .padding(.horizontal, 40)
+                
+                Spacer(minLength: 100)
+                
+                // Navigation
+                HStack(spacing: 20) {
+                    Button("Back") {
+                        onBack()
+                    }
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity)
+                    .disabled(isUploadingPhoto)
+                    
+                    Button("Continue") {
+                        onNext()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity)
+                    .disabled(!isStepValid || isUploadingPhoto)
+                }
+                .padding(.horizontal, 40)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal, 40)
-            .padding(.bottom, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemBackground))
+        .alert("Photo Upload Error", isPresented: $showPhotoError) {
+            Button("Try Again") {
+                selectedPhoto = nil
+                profileImage = nil
+                photoValid = false
+            }
+            Button("OK") { }
+        } message: {
+            Text(photoErrorMessage)
+        }
+        .onChange(of: profileImage) { newImage in
+            onImageSelected?(newImage)
+        }
     }
 }
 
@@ -682,6 +720,166 @@ struct OnboardingPersonalityQuestion: View {
             TextField("Your answer...", text: $answer, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(2...4)
+        }
+    }
+}
+
+struct ProfilePhotoPickerField: View {
+    @Binding var selectedPhoto: PhotosPickerItem?
+    @Binding var profileImage: UIImage?
+    @Binding var isValid: Bool
+    @Binding var isUploading: Bool
+    let onError: (String) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Profile Photo")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Spacer()
+                
+                if isUploading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else if isValid {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.subheadline)
+                }
+            }
+            
+            HStack(spacing: 16) {
+                // Profile image preview
+                Group {
+                    if let profileImage {
+                        Image(uiImage: profileImage)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Image(systemName: "person.crop.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .frame(width: 80, height: 80)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(profileImage != nil ? "Photo selected" : "Add your photo")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    Text("This helps other Yellow Jackets recognize you")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                    
+                    PhotosPicker(
+                        selection: $selectedPhoto,
+                        matching: .images,
+                        photoLibrary: .shared()
+                    ) {
+                        Text(profileImage != nil ? "Change Photo" : "Select Photo")
+                            .font(.caption)
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.accentColor.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+                    .disabled(isUploading)
+                }
+                
+                Spacer()
+            }
+            .padding(16)
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+        }
+        .onChange(of: selectedPhoto) { _ in
+            loadSelectedPhoto()
+        }
+    }
+    
+    private func loadSelectedPhoto() {
+        guard let selectedPhoto else {
+            profileImage = nil
+            isValid = false
+            return
+        }
+        
+        isUploading = true
+        
+        Task {
+            do {
+                if let data = try await selectedPhoto.loadTransferable(type: Data.self) {
+                    if let image = UIImage(data: data) {
+                        let compressedImage = await compressImage(image)
+                        
+                        await MainActor.run {
+                            profileImage = compressedImage
+                            isValid = true
+                            isUploading = false
+                        }
+                    } else {
+                        await MainActor.run {
+                            onError("Unable to process the selected image")
+                            isUploading = false
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        onError("Unable to load the selected image")
+                        isUploading = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    onError("Error loading image: \(error.localizedDescription)")
+                    isUploading = false
+                }
+            }
+        }
+    }
+    
+    private func compressImage(_ image: UIImage) async -> UIImage {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let targetSize = CGSize(width: 600, height: 600)
+                
+                // Calculate new size maintaining aspect ratio
+                let widthRatio = targetSize.width / image.size.width
+                let heightRatio = targetSize.height / image.size.height
+                let ratio = min(widthRatio, heightRatio)
+                
+                let newSize = CGSize(
+                    width: image.size.width * ratio,
+                    height: image.size.height * ratio
+                )
+                
+                // Create compressed image
+                let format = UIGraphicsImageRendererFormat()
+                format.scale = 1.0
+                
+                let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
+                let compressedImage = renderer.image { _ in
+                    image.draw(in: CGRect(origin: .zero, size: newSize))
+                }
+                
+                // Further compress with JPEG
+                if let jpegData = compressedImage.jpegData(compressionQuality: 0.8),
+                   let finalImage = UIImage(data: jpegData) {
+                    continuation.resume(returning: finalImage)
+                } else {
+                    continuation.resume(returning: compressedImage)
+                }
+            }
         }
     }
 }
