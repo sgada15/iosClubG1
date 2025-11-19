@@ -1,9 +1,12 @@
 import SwiftUI
+import FirebaseAuth
 
 struct OtherProfileDetailView: View {
     let profile: UserProfile
     var isCurrentUser: Bool = false
     var onEdit: (() -> Void)? = nil
+    
+    @EnvironmentObject var authManager: AuthenticationManager
 
     var body: some View {
         ScrollView {
@@ -91,6 +94,7 @@ struct OtherProfileDetailView: View {
         .navigationTitle(isCurrentUser ? "My Profile" : profile.name)
         .navigationBarTitleDisplayMode(.inline)
     }
+    }
 
     @ViewBuilder private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -110,7 +114,6 @@ struct OtherProfileDetailView: View {
                 .background(Color(.systemGray6)).clipShape(Capsule())
         }
     }
-}
 
 private struct Wrap<Data: RandomAccessCollection, Content: View>: View where Data.Element: Hashable {
     let items: Data; let content: (Data.Element) -> Content

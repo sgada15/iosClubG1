@@ -6,9 +6,16 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct EventCardView: View {
     let event: Event
+    @EnvironmentObject var attendanceManager: EventAttendanceManager
+    @EnvironmentObject var authManager: AuthenticationManager
+    @StateObject private var friendsManager = FriendsManager()
+    
+    @State private var attendingFriends: [UserProfile] = []
+    @State private var totalAttendeeCount = 0
     
     private var salsaIconName: String? {
         guard let name = event.iconSystemName else { return nil }
@@ -39,6 +46,26 @@ struct EventCardView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
+                
+                // Attending friends section
+                if !attendingFriends.isEmpty || totalAttendeeCount > 0 {
+                    HStack(alignment: .center, spacing: 8) {
+                        AttendingFriendsView.forEventCard(
+                            friends: attendingFriends,
+                            totalCount: totalAttendeeCount
+                        )
+                        
+                        if !attendingFriends.isEmpty {
+                            Text(AttendingFriendsView.attendanceText(
+                                friendsCount: attendingFriends.count,
+                                totalCount: totalAttendeeCount
+                            ))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.top, 2)
+                }
             }
             Spacer(minLength: 0)
         }
@@ -53,6 +80,36 @@ struct EventCardView: View {
                 .stroke(Color(.separator), lineWidth: 0.5)
         )
         .padding(.horizontal)
+        .onAppear {
+            Task {
+                // Load friends first if not already loaded
+                if let currentUserId = authManager.user?.uid, friendsManager.userFriends.isEmpty {
+                    await friendsManager.loadFriends(for: currentUserId, authManager: authManager)
+                }
+                // Then load attending friends
+                loadAttendingFriends()
+            }
+        }
+        .onChange(of: attendanceManager.eventAttendance[event.id]) { _ in
+            loadAttendingFriends()
+        }
+        .onChange(of: friendsManager.userFriends) { _ in
+            // Reload when friends list changes
+            loadAttendingFriends()
+        }
+    }
+    
+    private func loadAttendingFriends() {
+        // Get total attendee count
+        totalAttendeeCount = attendanceManager.getAttendeeCount(for: event)
+        
+        // Use actual friends from FriendsManager
+        let userFriends = friendsManager.userFriends
+        
+        // Filter friends who are attending
+        attendingFriends = attendanceManager.getFriendsAttending(event: event, userFriends: userFriends)
+        
+        print("🎫 Event: \(event.title) - \(attendingFriends.count) friends attending, \(totalAttendeeCount) total")
     }
 }
 

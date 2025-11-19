@@ -6,7 +6,7 @@
 //
 import Foundation
 
-struct UserProfile: Identifiable, Codable {
+struct UserProfile: Identifiable, Codable, Equatable {
     var id: String
     var profilePhotoURL: String?
     var name: String
