@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct EditProfileView: View {
     @Binding var profile: UserProfile
@@ -18,6 +19,13 @@ struct EditProfileView: View {
     @State private var isLoading = false
     @State private var isSaving = false
     @State private var saveError: String?
+    
+    // Photo picker states
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var profileImage: UIImage?
+    @State private var isUploadingPhoto = false
+    @State private var showPhotoError = false
+    @State private var photoErrorMessage = ""
     
     // Constants
     private let graduationYears = ["2025", "2026", "2027", "2028", "2029", "2030"]
@@ -65,19 +73,75 @@ struct EditProfileView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         
                         // Profile Photo Section
-                        VStack(spacing: 12) {
-                            Image(systemName: "person.circle.fill")
-                                .resizable()
-                                .scaledToFit()
+                        VStack(spacing: 16) {
+                            HStack(spacing: 16) {
+                                // Current photo preview
+                                Group {
+                                    if let profileImage {
+                                        Image(uiImage: profileImage)
+                                            .resizable()
+                                            .scaledToFill()
+                                    } else if let photoURL = profile.profilePhotoURL, !photoURL.isEmpty {
+                                        AsyncImage(url: URL(string: photoURL)) { image in
+                                            image
+                                                .resizable()
+                                                .scaledToFill()
+                                        } placeholder: {
+                                            Image(systemName: "person.circle.fill")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.gray)
+                                        }
+                                    } else {
+                                        Image(systemName: "person.circle.fill")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.gray)
+                                    }
+                                }
                                 .frame(width: 80, height: 80)
-                                .foregroundColor(.gray)
-                            
-                            Text("Tap to change (coming soon)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .clipShape(Circle())
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Profile Photo")
+                                        .font(.headline)
+                                        .fontWeight(.medium)
+                                    
+                                    Text("Choose a photo that represents you")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                    
+                                    HStack(spacing: 12) {
+                                        PhotosPicker(
+                                            selection: $selectedPhoto,
+                                            matching: .images,
+                                            photoLibrary: .shared()
+                                        ) {
+                                            Text("Change Photo")
+                                                .font(.caption)
+                                                .foregroundColor(.accentColor)
+                                                .padding(.horizontal, 12)
+                                                .padding(.vertical, 6)
+                                                .background(Color.accentColor.opacity(0.1))
+                                                .cornerRadius(6)
+                                        }
+                                        .disabled(isUploadingPhoto)
+                                        
+                                        if isUploadingPhoto {
+                                            ProgressView()
+                                                .scaleEffect(0.7)
+                                        }
+                                    }
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(16)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(12)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top)
                         
                         // Basic Info Section
                         VStack(alignment: .leading, spacing: 16) {
@@ -279,6 +343,18 @@ struct EditProfileView: View {
                 Text(error)
             }
         }
+        .alert("Photo Error", isPresented: $showPhotoError) {
+            Button("Try Again") {
+                selectedPhoto = nil
+                profileImage = nil
+            }
+            Button("OK") { }
+        } message: {
+            Text(photoErrorMessage)
+        }
+        .onChange(of: selectedPhoto) { _ in
+            loadSelectedPhoto()
+        }
     }
     
     // MARK: - Helper Functions
@@ -307,6 +383,22 @@ struct EditProfileView: View {
         
         Task {
             do {
+                // If there's a new profile image, upload it first
+                if let profileImage = profileImage {
+                    print("📸 Uploading new profile image...")
+                    
+                    // Delete old image if it exists
+                    if let oldURL = profile.profilePhotoURL, !oldURL.isEmpty {
+                        try? await authManager.deleteOldProfileImage(url: oldURL)
+                    }
+                    
+                    // Upload new image
+                    let newImageURL = try await authManager.uploadProfileImage(profileImage, userId: profile.id)
+                    profile.profilePhotoURL = newImageURL
+                    
+                    print("✅ Profile image uploaded successfully")
+                }
+                
                 try await authManager.saveUserProfile(profile)
                 print("✅ Profile saved successfully")
                 await MainActor.run {
@@ -318,6 +410,83 @@ struct EditProfileView: View {
                 await MainActor.run {
                     isSaving = false
                     saveError = "Failed to save profile: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    private func loadSelectedPhoto() {
+        guard let selectedPhoto else {
+            profileImage = nil
+            return
+        }
+        
+        isUploadingPhoto = true
+        
+        Task {
+            do {
+                if let data = try await selectedPhoto.loadTransferable(type: Data.self) {
+                    if let image = UIImage(data: data) {
+                        let compressedImage = await compressImage(image)
+                        
+                        await MainActor.run {
+                            profileImage = compressedImage
+                            isUploadingPhoto = false
+                        }
+                    } else {
+                        await MainActor.run {
+                            photoErrorMessage = "Unable to process the selected image"
+                            showPhotoError = true
+                            isUploadingPhoto = false
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        photoErrorMessage = "Unable to load the selected image"
+                        showPhotoError = true
+                        isUploadingPhoto = false
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    photoErrorMessage = "Error loading image: \(error.localizedDescription)"
+                    showPhotoError = true
+                    isUploadingPhoto = false
+                }
+            }
+        }
+    }
+    
+    private func compressImage(_ image: UIImage) async -> UIImage {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let targetSize = CGSize(width: 600, height: 600)
+                
+                // Calculate new size maintaining aspect ratio
+                let widthRatio = targetSize.width / image.size.width
+                let heightRatio = targetSize.height / image.size.height
+                let ratio = min(widthRatio, heightRatio)
+                
+                let newSize = CGSize(
+                    width: image.size.width * ratio,
+                    height: image.size.height * ratio
+                )
+                
+                // Create compressed image
+                let format = UIGraphicsImageRendererFormat()
+                format.scale = 1.0
+                
+                let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
+                let compressedImage = renderer.image { _ in
+                    image.draw(in: CGRect(origin: .zero, size: newSize))
+                }
+                
+                // Further compress with JPEG
+                if let jpegData = compressedImage.jpegData(compressionQuality: 0.8),
+                   let finalImage = UIImage(data: jpegData) {
+                    continuation.resume(returning: finalImage)
+                } else {
+                    continuation.resume(returning: compressedImage)
                 }
             }
         }

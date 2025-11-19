@@ -79,13 +79,18 @@ struct SavedProfileCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Profile picture
-            Image(systemName: "person.circle.fill")
-                .resizable()
-                .scaledToFill()
-                .frame(width: 55, height: 55)
-                .clipShape(Circle())
-                .foregroundColor(.gray)
-                .shadow(radius: 2)
+            AsyncImage(url: URL(string: profile.profilePhotoURL ?? "")) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(.gray)
+            }
+            .frame(width: 55, height: 55)
+            .clipShape(Circle())
+            .shadow(radius: 2)
             
             // Info section
             VStack(alignment: .leading, spacing: 6) {
