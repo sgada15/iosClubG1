@@ -21,6 +21,9 @@ struct OtherProfileDetailView: View {
                     .frame(width: 96, height: 96)
                     .clipShape(Circle()).shadow(radius: 6)
                     Text(profile.name).font(.title2).bold()
+                    Text("@\(profile.username)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                     Text([profile.major, profile.year].filter { !$0.isEmpty }.joined(separator: " • "))
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
@@ -42,6 +45,35 @@ struct OtherProfileDetailView: View {
                     section("Clubs") {
                         Text(profile.clubs.joined(separator: ", "))
                             .foregroundStyle(.secondary)
+                    }
+                }
+                
+                // Personality Questions Section
+                if !profile.personalityAnswers.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
+                    section("Personality") {
+                        VStack(alignment: .leading, spacing: 16) {
+                            let questions = [
+                                "What's your favorite way to spend a weekend?",
+                                "Describe yourself in three words.",
+                                "What's something you're passionate about?",
+                                "What's your ideal study environment?"
+                            ]
+                            
+                            ForEach(0..<min(questions.count, profile.personalityAnswers.count), id: \.self) { index in
+                                let answer = profile.personalityAnswers[index].trimmingCharacters(in: .whitespacesAndNewlines)
+                                if !answer.isEmpty {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(questions[index])
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(.primary)
+                                        
+                                        Text(answer)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 

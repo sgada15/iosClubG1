@@ -11,7 +11,7 @@ import FirebaseAuth
 struct MyProfileView: View {
     @EnvironmentObject var authManager: AuthenticationManager
     
-    // Sample profile data for current user - you'll replace this later
+    // Start with empty profile - will be loaded from Firebase or created
     @State private var currentUserProfile: UserProfile = UserProfile(
         id: "current-user",
         profilePhotoURL: nil,
