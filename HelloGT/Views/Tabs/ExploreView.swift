@@ -190,10 +190,12 @@ struct ExploreView: View {
             }
             .onAppear {
                 setupManagers()
+                // Only reload if we have no profiles at all, otherwise preserve current state
                 if allProfiles.isEmpty {
                     loadExploreProfiles()
                 } else {
-                    applyYearFilter()
+                    // Just refresh the filtering without resetting card positions
+                    refreshFilteredProfiles()
                 }
             }
             .onChange(of: selectedYear) { oldValue, newValue in
@@ -409,7 +411,7 @@ struct ExploreView: View {
             do {
                 let users = try await authManager.fetchAllUsers()
                 await MainActor.run {
-                    // Store all profiles (filtered by swipe status only)
+                    // Store all profiles and filter out ones we've already swiped on
                     allProfiles = users.filter { swipeManager.shouldShowUser($0) }
                     
                     // Apply year filter
@@ -443,7 +445,7 @@ struct ExploreView: View {
             exploreProfiles = allProfiles.filter { $0.year == selectedYear }
         }
         
-        // Reset card stack with filtered profiles
+        // Reset card stack with filtered profiles (only when filter changes)
         if !exploreProfiles.isEmpty {
             cardStack = [exploreProfiles[0]]
             currentProfileIndex = 1
@@ -460,6 +462,48 @@ struct ExploreView: View {
         
         print("🔍 Applied year filter: \(selectedYear)")
         print("📊 Filtered profiles count: \(exploreProfiles.count)")
+    }
+    
+    private func refreshFilteredProfiles() {
+        // Re-filter allProfiles based on swipe history (users we haven't swiped on)
+        allProfiles = allProfiles.filter { swipeManager.shouldShowUser($0) }
+        
+        // Apply year filter without resetting card positions
+        if selectedYear == "All" {
+            exploreProfiles = allProfiles
+        } else {
+            exploreProfiles = allProfiles.filter { $0.year == selectedYear }
+        }
+        
+        // Only update card stack if it's empty or contains profiles we've now swiped on
+        if cardStack.isEmpty || !cardStack.allSatisfy({ profile in exploreProfiles.contains { $0.id == profile.id } }) {
+            resetCardStackToCurrentPosition()
+        }
+        
+        print("🔄 Refreshed filtered profiles: \(exploreProfiles.count) available")
+        print("📚 Current card stack: \(cardStack.count) cards")
+    }
+    
+    private func resetCardStackToCurrentPosition() {
+        // Reset card stack with current position preserved
+        if !exploreProfiles.isEmpty {
+            // Find a valid starting position
+            let startIndex = max(0, min(currentProfileIndex, exploreProfiles.count - 1))
+            cardStack = []
+            currentProfileIndex = startIndex
+            
+            // Add up to 3 cards starting from current position
+            for i in 0..<min(3, exploreProfiles.count - startIndex) {
+                if startIndex + i < exploreProfiles.count {
+                    cardStack.append(exploreProfiles[startIndex + i])
+                }
+            }
+            
+            print("🃏 Reset card stack starting at index \(startIndex)")
+        } else {
+            cardStack = []
+            currentProfileIndex = 0
+        }
     }
 }
 
