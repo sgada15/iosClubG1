@@ -1,0 +1,93 @@
+// Firestore Security Rules - Updated for Unfriend Functionality
+// Make sure to publish these rules in Firebase Console
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Profiles: users/{uid}
+    match /users/{uid} {
+      // Anyone signed in can read profiles (adjust to your needs)
+      allow read: if request.auth != null;
+      // Only the owner can write their profile and it must be valid
+      allow create, update, delete: if request.auth != null 
+                                     && request.auth.uid == uid 
+                                     && isValidProfile(request.resource.data);
+      
+      function isValidProfile(data) {
+        return data.name is string 
+               && data.username is string 
+               && data.major is string 
+               && data.bio is string 
+               && data.year is string 
+               && data.interests is list 
+               && data.clubs is list 
+               && data.personalityAnswers is list 
+               && data.personalityAnswers.size() == 4 
+               && (data.year == "" || data.year in ["2025","2026","2027","2028","2029","2030"])
+               && (!('profilePhotoURL' in data) || data.profilePhotoURL is string || data.profilePhotoURL == null);
+      }
+    }
+    
+    // Matches: matches/{matchId}
+    // IMPORTANT: Both users should be able to delete the match document
+    match /matches/{matchId} {
+      allow read: if request.auth != null 
+                  && (resource.data.user1Id == request.auth.uid 
+                      || resource.data.user2Id == request.auth.uid);
+      
+      allow create: if request.auth != null 
+                    && (request.resource.data.user1Id == request.auth.uid 
+                        || request.resource.data.user2Id == request.auth.uid);
+      
+      // Allow deletion if the current user is either user1Id or user2Id in the match
+      allow delete: if request.auth != null 
+                    && (resource.data.user1Id == request.auth.uid 
+                        || resource.data.user2Id == request.auth.uid);
+      
+      allow update: if false; // Matches should not be updated, only created/deleted
+    }
+    
+    // Swipes: swipes/{userId}/swipedRight/{targetUserId}
+    match /swipes/{userId}/swipedRight/{targetUserId} {
+      allow create: if request.auth != null 
+                    && request.auth.uid == userId;
+      allow read: if request.auth != null 
+                  && (request.auth.uid == userId || request.auth.uid == targetUserId);
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      allow update: if false;
+    }
+    
+    // Saved Profiles: savedProfiles/{userId}/profiles/{profileId}
+    match /savedProfiles/{userId}/profiles/{profileId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Username reservation: usernames/{usernameLowercased}
+    match /usernames/{uname} {
+      allow read: if true;
+      allow create: if request.auth != null 
+                    && !exists(/databases/$(database)/documents/usernames/$(uname)) 
+                    && request.resource.data.keys().hasOnly(['uid']) 
+                    && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null 
+                    && resource.data.uid == request.auth.uid 
+                    && request.resource.data.uid == resource.data.uid;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+    
+    // User Swipe Data: userSwipeData/{userId}
+    match /userSwipeData/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Swipe Decisions: swipeDecisions/{decisionId}
+    match /swipeDecisions/{decisionId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null;
+      allow update: if false;
+    }
+  }
+}
+
