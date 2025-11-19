@@ -9,12 +9,17 @@ struct OtherProfileDetailView: View {
         ScrollView {
             VStack(spacing: 16) {
                 VStack(spacing: 12) {
-                    Image(systemName: "person.circle.fill")
-                        .resizable().scaledToFill()
-                        .frame(width: 96, height: 96)
-                        .clipShape(Circle())
-                        .foregroundColor(.gray)
-                        .shadow(radius: 6)
+                    AsyncImage(url: URL(string: profile.profilePhotoURL ?? "")) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Image("AppIcon")
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .frame(width: 96, height: 96)
+                    .clipShape(Circle()).shadow(radius: 6)
                     Text(profile.name).font(.title2).bold()
                     Text("@\(profile.username)")
                         .font(.subheadline)
@@ -65,6 +70,41 @@ struct OtherProfileDetailView: View {
                                         
                                         Text(answer)
                                             .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !profile.personalityAnswers.isEmpty && profile.personalityAnswers.contains(where: { !$0.isEmpty }) {
+                    section("Personality") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            let questions = [
+                                "What do you do in your free time?",
+                                "What are 3 words to describe yourself?",
+                                "What are you passionate about?",
+                                "What is your favorite study spot?"
+                            ]
+                            
+                            ForEach(0..<min(profile.personalityAnswers.count, questions.count), id: \.self) { index in
+                                if !profile.personalityAnswers[index].isEmpty {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(questions[index])
+                                            .font(.caption)
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(.secondary)
+                                        
+                                        Text(profile.personalityAnswers[index])
+                                            .font(.subheadline)
+                                            .foregroundStyle(.primary)
+                                    }
+                                    
+                                    if index < min(profile.personalityAnswers.count, questions.count) - 1 
+                                       && profile.personalityAnswers.indices.contains(index + 1)
+                                       && !profile.personalityAnswers[index + 1].isEmpty {
+                                        Divider()
+                                            .padding(.vertical, 4)
                                     }
                                 }
                             }

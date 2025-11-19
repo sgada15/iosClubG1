@@ -279,7 +279,7 @@ class AuthenticationManager: ObservableObject {
         
         print("📱 Final result: \(allUsers.count) users for explore feed")
         for user in allUsers {
-            print("👤 User: \(user.name) | Major: '\(user.major)' | Year: '\(user.year)'")
+            print("👤 User: \(user.name) | Major: \(user.major) | Year: \(user.year)")
         }
         
         return allUsers
