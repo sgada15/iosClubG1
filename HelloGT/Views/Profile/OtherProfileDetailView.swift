@@ -48,34 +48,7 @@ struct OtherProfileDetailView: View {
                     }
                 }
                 
-                // Personality Questions Section
-                if !profile.personalityAnswers.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
-                    section("Personality") {
-                        VStack(alignment: .leading, spacing: 16) {
-                            let questions = [
-                                "What's your favorite way to spend a weekend?",
-                                "Describe yourself in three words.",
-                                "What's something you're passionate about?",
-                                "What's your ideal study environment?"
-                            ]
-                            
-                            ForEach(0..<min(questions.count, profile.personalityAnswers.count), id: \.self) { index in
-                                let answer = profile.personalityAnswers[index].trimmingCharacters(in: .whitespacesAndNewlines)
-                                if !answer.isEmpty {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(questions[index])
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                            .foregroundStyle(.primary)
-                                        
-                                        Text(answer)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+
 
                 if !profile.personalityAnswers.isEmpty && profile.personalityAnswers.contains(where: { !$0.isEmpty }) {
                     section("Personality") {
@@ -91,13 +64,12 @@ struct OtherProfileDetailView: View {
                                 if !profile.personalityAnswers[index].isEmpty {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(questions[index])
-                                            .font(.caption)
+                                            .font(.subheadline)
                                             .fontWeight(.medium)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(.primary)
                                         
                                         Text(profile.personalityAnswers[index])
-                                            .font(.subheadline)
-                                            .foregroundStyle(.primary)
+                                            .foregroundStyle(.secondary)
                                     }
                                     
                                     if index < min(profile.personalityAnswers.count, questions.count) - 1 
